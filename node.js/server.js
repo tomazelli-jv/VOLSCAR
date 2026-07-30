@@ -338,7 +338,6 @@ const finalDepartureDate = departureDate ?? currentCar.departure_date;
         plate,
         chassis,
         arrivalDate,
-        finalScheduledDeparture,
         departureDate
       } = req.body;
 
