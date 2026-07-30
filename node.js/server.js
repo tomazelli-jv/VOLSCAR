@@ -509,7 +509,7 @@ app.delete('/api/events/:id', authenticateToken, async (req, res) => {
 });
 
 // =======================================
-// GET USERS
+//  USERS
 // =======================================
 
 app.get('/api/users', authenticateToken, async (req, res) => {
@@ -533,6 +533,313 @@ app.get('/api/users', authenticateToken, async (req, res) => {
     res.status(500).json({
       error: 'Server error'
     });
+  }
+});
+
+// =======================================
+// CREATE USER
+// =======================================
+
+app.post('/api/users', authenticateToken, async (req, res) => {
+  try {
+
+    const {
+      username,
+      password,
+      role,
+      permissions = []
+    } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({
+        error: 'Usuário e senha são obrigatórios'
+      });
+    }
+
+    // Verifica se o usuário já existe
+    const [exists] = await pool.execute(
+      'SELECT id FROM users WHERE username = ?',
+      [username]
+    );
+
+    if (exists.length) {
+      return res.status(400).json({
+        error: 'Usuário já existe'
+      });
+    }
+
+    // Criptografa a senha
+    const hash = await bcrypt.hash(password, 10);
+
+    // Cria o usuário
+    const [result] = await pool.execute(
+      `
+      INSERT INTO users
+      (
+        username,
+        password,
+        role
+      )
+      VALUES (?, ?, ?)
+      `,
+      [
+        username,
+        hash,
+        role || 'user'
+      ]
+    );
+
+    const userId = result.insertId;
+
+    // Salva permissões
+    if (Array.isArray(permissions)) {
+
+      for (const permission of permissions) {
+
+        const permissionId =
+          typeof permission === 'object'
+            ? permission.id
+            : permission;
+
+        if (!permissionId) continue;
+
+        await pool.execute(
+          `
+          INSERT INTO user_permissions
+          (
+            user_id,
+            permission_id
+          )
+          VALUES (?, ?)
+          `,
+          [
+            userId,
+            permissionId
+          ]
+        );
+      }
+    }
+
+    res.status(201).json({
+      id: userId,
+      message: 'Usuário criado com sucesso'
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: error.message
+    });
+
+  }
+});
+
+
+// =======================================
+// UPDATE USER
+// =======================================
+
+app.put('/api/users/:id', authenticateToken, async (req, res) => {
+  try {
+
+    const { id } = req.params;
+
+    const {
+      username,
+      role,
+      permissions = []
+    } = req.body;
+
+    if (!username) {
+      return res.status(400).json({
+        error: 'Usuário é obrigatório'
+      });
+    }
+
+    // Verifica se outro usuário já utiliza esse username
+    const [exists] = await pool.execute(
+      `
+      SELECT id
+      FROM users
+      WHERE username = ?
+      AND id <> ?
+      `,
+      [
+        username,
+        id
+      ]
+    );
+
+    if (exists.length) {
+      return res.status(400).json({
+        error: 'Já existe um usuário com esse nome.'
+      });
+    }
+
+    // Atualiza usuário
+    await pool.execute(
+      `
+      UPDATE users
+      SET
+        username = ?,
+        role = ?
+      WHERE id = ?
+      `,
+      [
+        username,
+        role,
+        id
+      ]
+    );
+
+    // Remove permissões atuais
+    await pool.execute(
+      `
+      DELETE FROM user_permissions
+      WHERE user_id = ?
+      `,
+      [id]
+    );
+
+    // Insere novamente
+    if (Array.isArray(permissions)) {
+
+      for (const permission of permissions) {
+
+        const permissionId =
+          typeof permission === 'object'
+            ? permission.id
+            : permission;
+
+        if (!permissionId) continue;
+
+        await pool.execute(
+          `
+          INSERT INTO user_permissions
+          (
+            user_id,
+            permission_id
+          )
+          VALUES (?, ?)
+          `,
+          [
+            id,
+            permissionId
+          ]
+        );
+      }
+
+    }
+
+    res.json({
+      message: 'Usuário atualizado com sucesso.'
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: error.message
+    });
+
+  }
+});
+
+// =======================================
+// UPDATE USER PASSWORD
+// =======================================
+
+app.put('/api/users/:id/password', authenticateToken, async (req, res) => {
+  try {
+
+    const { id } = req.params;
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({
+        error: 'Senha é obrigatória.'
+      });
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+
+    await pool.execute(
+      `
+      UPDATE users
+      SET password = ?
+      WHERE id = ?
+      `,
+      [
+        hash,
+        id
+      ]
+    );
+
+    res.json({
+      message: 'Senha alterada com sucesso.'
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: error.message
+    });
+
+  }
+});
+
+
+// =======================================
+// DELETE USER
+// =======================================
+
+app.delete('/api/users/:id', authenticateToken, async (req, res) => {
+  try {
+
+    const { id } = req.params;
+
+    // Não permitir excluir o próprio usuário
+    if (Number(id) === Number(req.user.id)) {
+      return res.status(400).json({
+        error: 'Você não pode excluir seu próprio usuário.'
+      });
+    }
+
+    // Remove permissões
+    await pool.execute(
+      `
+      DELETE FROM user_permissions
+      WHERE user_id = ?
+      `,
+      [id]
+    );
+
+    // Remove usuário
+    await pool.execute(
+      `
+      DELETE FROM users
+      WHERE id = ?
+      `,
+      [id]
+    );
+
+    res.json({
+      message: 'Usuário removido com sucesso.'
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: error.message
+    });
+
   }
 });
 
