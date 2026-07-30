@@ -205,31 +205,81 @@ app.post('/api/cars', authenticateToken, async (req, res) => {
     } = req.body;
 
     const [result] = await pool.execute(
-      `
-      INSERT INTO cars
-      (
-        name,
-        model,
-        plate,
-        chassis,
-        arrival_date,
-        scheduled_departure
-      )
-      VALUES (?, ?, ?, ?, ?, ?)
-      `,
-      [
-        name,
-        model,
-        plate,
-        chassis,
-        arrivalDate || null,
-        scheduledDeparture || null
-      ]
-    );
+  `
+  INSERT INTO cars
+  (
+    name,
+    model,
+    plate,
+    chassis,
+    arrival_date,
+    scheduled_departure
+  )
+  VALUES (?, ?, ?, ?, ?, ?)
+  `,
+  [
+    name,
+    model,
+    plate,
+    chassis,
+    arrivalDate || null,
+    scheduledDeparture || null
+  ]
+);
 
-    res.status(201).json({
-      id: result.insertId
-    });
+const carId = result.insertId;
+
+// Cria evento automático de saída
+if (scheduledDeparture) {
+
+  await pool.execute(
+    `
+    INSERT INTO events
+    (
+      car_id,
+      type,
+      title,
+      date,
+      time,
+      vendor,
+      client,
+      note,
+      source,
+      source_id
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `,
+    [
+    carId,
+    'saida',
+    `🚗 ${name}`,
+    scheduledDeparture,
+    '08:00',
+    '',
+    '',
+    `
+Veículo: ${name}
+
+Modelo: ${model}
+
+Placa: ${plate}
+
+Chassi: ${chassis}
+
+Entrada: ${arrivalDate || '-'}
+
+Saída prevista: ${scheduledDeparture}
+`,
+    'system',
+    carId
+]
+  );
+
+}
+
+res.status(201).json({
+  id: carId
+});
 
   } catch (error) {
 
@@ -285,6 +335,105 @@ app.put('/api/cars/:id', authenticateToken, async (req, res) => {
       ]
     );
 
+// =======================================
+// Atualiza evento automático da agenda
+// =======================================
+
+// Procura se já existe um evento automático deste veículo
+const [eventRows] = await pool.execute(
+  `
+  SELECT id
+  FROM events
+  WHERE source = 'system'
+    AND source_id = ?
+  `,
+  [id]
+);
+
+if (scheduledDeparture) {
+
+  if (eventRows.length) {
+
+    // Atualiza o evento existente
+    await pool.execute(
+      `
+      UPDATE events
+      SET
+        title = ?,
+        date = ?,
+        note = ?
+        WHERE id = ?
+      `,
+      [
+    `🚗 ${name}`,
+    scheduledDeparture,
+    `
+Veículo: ${name}
+
+Modelo: ${model}
+
+Placa: ${plate}
+
+Chassi: ${chassis}
+
+Entrada: ${arrivalDate || '-'}
+
+Saída prevista: ${scheduledDeparture}
+`,
+    eventRows[0].id
+]
+    );
+
+  } else {
+
+    // Cria o evento caso ainda não exista
+    await pool.execute(
+      `
+      INSERT INTO events
+      (
+        car_id,
+        type,
+        title,
+        date,
+        time,
+        vendor,
+        client,
+        note,
+        source,
+        source_id
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        id,
+        'saida',
+        `Saída prevista - ${name}`,
+        scheduledDeparture,
+        '00:00',
+        '',
+        '',
+        'Gerado automaticamente',
+        'system',
+        id
+      ]
+    );
+
+  }
+
+} else {
+
+  // Remove o evento caso a data de saída tenha sido apagada
+  await pool.execute(
+    `
+    DELETE FROM events
+    WHERE source = 'system'
+      AND source_id = ?
+    `,
+    [id]
+  );
+
+}
+
     res.json({
       message: 'Car updated successfully'
     });
@@ -307,6 +456,16 @@ app.delete('/api/cars/:id', authenticateToken, async (req, res) => {
   try {
 
     const { id } = req.params;
+
+// Remove o evento automático da agenda
+await pool.execute(
+  `
+  DELETE FROM events
+  WHERE source = 'system'
+    AND source_id = ?
+  `,
+  [id]
+);
 
     await pool.execute(
       'DELETE FROM cars WHERE id = ?',
