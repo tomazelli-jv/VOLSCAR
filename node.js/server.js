@@ -11,6 +11,7 @@ const pool = require('./config/database');
 console.log('DB_HOST:', process.env.DB_HOST);
 
 const app = express();
+app.set('trust proxy', 1);
 
 app.use((req, res, next) => {
     console.log(`${req.method} ${req.originalUrl}`);
@@ -537,6 +538,41 @@ app.get('/api/users', authenticateToken, async (req, res) => {
 });
 
 // =======================================
+// GET USER PERMISSIONS
+// =======================================
+
+app.get('/api/users/:id/permissions', authenticateToken, async (req, res) => {
+  try {
+
+    const { id } = req.params;
+
+    const [permissions] = await pool.execute(`
+      SELECT
+        p.id,
+        p.name,
+        p.description,
+        p.category
+      FROM user_permissions up
+      INNER JOIN permissions p
+        ON p.id = up.permission_id
+      WHERE up.user_id = ?
+      ORDER BY p.category, p.name
+    `, [id]);
+
+    res.json(permissions);
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: error.message
+    });
+
+  }
+});
+
+// =======================================
 // CREATE USER
 // =======================================
 
@@ -850,20 +886,26 @@ app.delete('/api/users/:id', authenticateToken, async (req, res) => {
 app.get('/api/permissions', authenticateToken, async (req, res) => {
   try {
 
-    res.json({
-      admin: true,
-      create: true,
-      edit: true,
-      delete: true
-    });
+    const [permissions] = await pool.execute(`
+      SELECT
+        id,
+        name,
+        description,
+        category
+      FROM permissions
+      ORDER BY category, name
+    `);
+
+    res.json(permissions);
 
   } catch (error) {
 
     console.error(error);
 
     res.status(500).json({
-      error: 'Server error'
+      error: error.message
     });
+
   }
 });
 

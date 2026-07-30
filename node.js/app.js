@@ -728,13 +728,6 @@ function openSettingsAuth() {
 
 function closeSettingsAuthModal() { settingsAuthModal.classList.add("hidden"); }
 
-function renderSettingsPanel() {
-  settingsTableBody.innerHTML = "";
-  if (!users.length) {
-    settingsTableBody.innerHTML = `<tr><td colspan="6" class="empty-row">Nenhum usuário configurado para edição local.</td></tr>`;
-    return;
-  }
-
   users.forEach(user => {
     const row = document.createElement("tr");
     row.innerHTML = `
@@ -746,7 +739,7 @@ function renderSettingsPanel() {
     `;
     settingsTableBody.appendChild(row);
   });
-}
+
 
 function handleSettingsPermissionChange(event) {
   if (event.target.tagName !== "INPUT") return;
@@ -1521,7 +1514,6 @@ settingsAuthForm.addEventListener("submit", e => {
   settingsAuthorized = true;
   closeSettingsAuthModal();
   setActiveTab("settings");
-  renderSettingsPanel();
 });
 
 closeSettingsAuth.addEventListener("click",  closeSettingsAuthModal);
@@ -1532,8 +1524,7 @@ tabButtons.forEach(button => {
     const tab = button.dataset.tab;
     if (tab === "settings") {
       if (currentUser.role !== "admin") { showAppMessage("Acesso negado: somente administrador pode ver esta área.", "danger"); return; }
-      if (!settingsAuthorized) { openSettingsAuth(); return; }
-      renderSettingsPanel();
+      if (!settingsAuthorized) { openSettingsAuth(); return; };
     }
     if (tab !== "settings") clearAppMessage();
     setActiveTab(tab);
@@ -1549,6 +1540,7 @@ carForm.addEventListener("submit", async e => {
     chassis: carChassis.value.trim(),
     arrivalDate: carArrival.value,
     scheduledDeparture: carScheduledDeparture.value || null
+
   };
 
   if (!carData.name || !carData.model || !carData.plate) {
