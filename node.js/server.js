@@ -457,24 +457,21 @@ app.delete('/api/cars/:id', authenticateToken, async (req, res) => {
 
     const { id } = req.params;
 
-// Remove o evento automático da agenda
+// Remove todos os eventos automáticos do veículo
 await pool.execute(
-  `
-  DELETE FROM events
-  WHERE source = 'system'
-    AND source_id = ?
-  `,
-  [id]
+    `
+    DELETE FROM events
+    WHERE source = 'system'
+      AND source_id = ?
+    `,
+    [id]
 );
 
-    await pool.execute(
-      'DELETE FROM cars WHERE id = ?',
-      [id]
-    );
-
-    res.json({
-      message: 'Car deleted successfully'
-    });
+// Remove o veículo
+await pool.execute(
+    'DELETE FROM cars WHERE id = ?',
+    [id]
+);
 
   } catch (error) {
 
@@ -658,7 +655,10 @@ app.delete('/api/events/:id', authenticateToken, async (req, res) => {
       message: 'Event deleted successfully'
     });
 
-  } catch (error) {
+  } 
+  
+  
+  catch (error) {
 
     console.error(error);
 

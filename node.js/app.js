@@ -115,7 +115,7 @@ const addEventFromDay   = document.getElementById("addEventFromDay");
 
 /* NOVOS ELEMENTOS PARA NOTIFICAÇÕES */
 const notificationBell       = document.getElementById("notificationBell");
-const notificationBadge      = document.getElementById("notificationBadge");
+  const notificationBadge      = document.getElementById("notificationBadge");
 const upcomingExitsButton    = document.getElementById("upcomingExitsButton");
 const notificationModal      = document.getElementById("notificationModal");
 const closeNotificationModal = document.getElementById("closeNotificationModal");
@@ -658,14 +658,31 @@ function getUpcomingExits(daysAhead = 7) {
 }
 
 function getImmediateExits() {
-  const now = new Date();
-  const tomorrow = new Date();
-  tomorrow.setDate(now.getDate() + 1);
-  tomorrow.setHours(23, 59, 59, 999);
-  return events.filter(ev => ev.type === "saida" && ev.date).filter(ev => {
-    const dt = getEventDateTime(ev);
-    return dt >= now && dt <= tomorrow;
-  }).sort((a, b) => getEventDateTime(a) - getEventDateTime(b));
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return cars
+    .filter(car => {
+
+      // Não possui saída programada
+      if (!car.scheduledDeparture) return false;
+
+      // Já saiu do estoque
+      if (car.departureDate) return false;
+
+      const exit = new Date(car.scheduledDeparture);
+      exit.setHours(0, 0, 0, 0);
+
+      const diff = (exit - today) / 86400000;
+
+      return diff >= 0 && diff <= 1;
+
+    })
+    .sort((a, b) =>
+      new Date(a.scheduledDeparture) - new Date(b.scheduledDeparture)
+    );
+
 }
 
 function updateNotifications() {
@@ -679,18 +696,22 @@ function showNotificationModal() {
   if (immediate.length === 0) {
     notificationModalBody.innerHTML = "<p>Nenhuma saída programada para hoje ou amanhã.</p>";
   } else {
-    immediate.forEach(ev => {
-      const car = ev.carId ? cars.find(c => c.id === ev.carId) : null;
-      const item = document.createElement("div");
-      item.className = "notification-item";
-      item.innerHTML = `
-        <strong>${car ? car.name : (ev.title || 'Saída')}</strong><br>
-        ${car ? `Placa: ${car.plate}<br>` : ""}
-        ${ev.vendor ? `Vendedor: ${ev.vendor}<br>` : ""}
-        Saída: ${ev.date} ${ev.time || "00:00"}
-      `;
-      notificationModalBody.appendChild(item);
-    });
+    immediate.forEach(car => {
+
+  const item = document.createElement("div");
+  item.className = "notification-item";
+
+  item.innerHTML = `
+    <strong>${car.name}</strong><br>
+    Modelo: ${car.model}<br>
+    Placa: ${car.plate}<br>
+    Saída prevista:
+    ${formatDateTime(car.scheduledDeparture)}
+  `;
+
+  notificationModalBody.appendChild(item);
+
+});
   }
   notificationModal.classList.remove("hidden");
 }
