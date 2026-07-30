@@ -170,7 +170,7 @@
           plate,
           chassis,
           DATE_FORMAT(arrival_date, '%Y-%m-%d') AS arrivalDate,
-          DATE_FORMAT(scheduled_departure, '%Y-%m-%d') AS scheduledDeparture,
+          DATE_FORMAT(scheduled_departure, '%Y-%m-%d') AS finalScheduledDeparture,
           DATE_FORMAT(departure_date, '%Y-%m-%d') AS departureDate
         FROM cars
         ORDER BY id DESC
@@ -201,7 +201,7 @@
         plate,
         chassis,
         arrivalDate,
-        scheduledDeparture
+        finalScheduledDeparture
       } = req.body;
 
       const [result] = await pool.execute(
@@ -223,14 +223,14 @@
       plate,
       chassis,
       arrivalDate || null,
-      scheduledDeparture || null
+      finalScheduledDeparture || null
     ]
   );
 
   const carId = result.insertId;
 
   // Cria evento automático de saída
-  if (scheduledDeparture) {
+  if (finalScheduledDeparture) {
 
     await pool.execute(
       `
@@ -252,23 +252,23 @@
       [
       carId,
       'saida',
-      `🚗 ${name}`,
-      scheduledDeparture,
+      `🚗 ${finalName}`,
+      finalScheduledDeparture,
       '08:00',
       '',
       '',
       `
-  Veículo: ${name}
+Veículo: ${finalName}
 
-  Modelo: ${model}
+Modelo: ${finalModel}
 
-  Placa: ${plate}
+Placa: ${finalPlate}
 
-  Chassi: ${chassis}
+Chassi: ${finalChassis}
 
-  Entrada: ${arrivalDate || '-'}
+Entrada: ${finalArrivalDate || '-'}
 
-  Saída prevista: ${scheduledDeparture}
+Saída prevista: ${finalScheduledDeparture || '-'}
   `,
       'system',
       carId
@@ -300,40 +300,74 @@
 
       const { id } = req.params;
 
+      // Busca o veículo atual
+const [rows] = await pool.execute(
+  `
+  SELECT
+    name,
+    model,
+    plate,
+    chassis,
+    arrival_date,
+    scheduled_departure,
+    departure_date
+  FROM cars
+  WHERE id = ?
+  `,
+  [id]
+);
+
+if (!rows.length) {
+  return res.status(404).json({
+    error: 'Veículo não encontrado'
+  });
+}
+
+const currentCar = rows[0];
+const finalName = name ?? currentCar.name;
+const finalModel = model ?? currentCar.model;
+const finalPlate = plate ?? currentCar.plate;
+const finalChassis = chassis ?? currentCar.chassis;
+const finalArrivalDate = arrivalDate ?? currentCar.arrival_date;
+const finalScheduledDeparture = finalScheduledDeparture ?? currentCar.scheduled_departure;
+const finalDepartureDate = departureDate ?? currentCar.departure_date;
+
       const {
         name,
         model,
         plate,
         chassis,
         arrivalDate,
-        scheduledDeparture,
+        finalScheduledDeparture,
         departureDate
       } = req.body;
 
       await pool.execute(
-        `
-        UPDATE cars
-        SET
-          name = ?,
-          model = ?,
-          plate = ?,
-          chassis = ?,
-          arrival_date = ?,
-          scheduled_departure = ?,
-          departure_date = ?
-        WHERE id = ?
-        `,
-        [
-          name,
-          model,
-          plate,
-          chassis,
-          arrivalDate || null,
-          scheduledDeparture || null,
-          departureDate || null,
-          id
-        ]
-      );
+  `
+  UPDATE cars
+  SET
+    name = ?,
+    model = ?,
+    plate = ?,
+    chassis = ?,
+    arrival_date = ?,
+    scheduled_departure = ?,
+    departure_date = ?
+  WHERE id = ?
+  `,
+  [
+    name ?? currentCar.name,
+    model ?? currentCar.model,
+    plate ?? currentCar.plate,
+    chassis ?? currentCar.chassis,
+    arrivalDate ?? currentCar.arrival_date,
+    finalScheduledDeparture ?? currentCar.scheduled_departure,
+    departureDate ?? currentCar.departure_date,
+    id
+  ]
+
+  
+);
 
   // =======================================
   // Atualiza evento automático da agenda
@@ -350,7 +384,7 @@
     [id]
   );
 
-  if (scheduledDeparture) {
+  if (finalScheduledDeparture) {
 
     if (eventRows.length) {
 
@@ -365,20 +399,20 @@
           WHERE id = ?
         `,
         [
-      `🚗 ${name}`,
-      scheduledDeparture,
+      `🚗 ${finalName}`,
+      finalScheduledDeparture,
       `
-  Veículo: ${name}
+Veículo: ${finalName}
 
-  Modelo: ${model}
+Modelo: ${finalModel}
 
-  Placa: ${plate}
+Placa: ${finalPlate}
 
-  Chassi: ${chassis}
+Chassi: ${finalChassis}
 
-  Entrada: ${arrivalDate || '-'}
+Entrada: ${finalArrivalDate || '-'}
 
-  Saída prevista: ${scheduledDeparture}
+Saída prevista: ${finalScheduledDeparture || '-'}}
   `,
       eventRows[0].id
   ]
@@ -407,8 +441,8 @@
         [
           id,
           'saida',
-          `Saída prevista - ${name}`,
-          scheduledDeparture,
+          `Saída prevista - ${finalName}`,
+          finalScheduledDeparture,
           '00:00',
           '',
           '',

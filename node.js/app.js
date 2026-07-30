@@ -999,19 +999,35 @@ function confirmExitPlate(car) {
 }
 
 async function markAsExited(id) {
+
   const car = cars.find(c => c.id === id);
   if (!car) return;
+
   if (!confirmExitPlate(car)) return;
-  const departureDate = new Date().toISOString().slice(0, 16);
+
   try {
-    await updateCarData(id, { departureDate });
+
+    await updateCarData(id, {
+      name: car.name,
+      model: car.model,
+      plate: car.plate,
+      chassis: car.chassis,
+      arrivalDate: car.arrivalDate,
+      scheduledDeparture: car.scheduledDeparture,
+      departureDate: new Date().toISOString().slice(0, 16)
+    });
+
     await loadCars();
     renderCarsTable();
     updateDashboard();
+
   } catch (error) {
-    console.error('Error updating departure date:', error);
-    alert('Erro ao registrar saída');
+
+    console.error("Error updating departure date:", error);
+    alert("Erro ao registrar saída");
+
   }
+
 }
 
 /* ==========================================================
