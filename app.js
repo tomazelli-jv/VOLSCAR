@@ -1,0 +1,1647 @@
+/* ==========================================================
+   Volkswagen Fleet Manager — app.js
+   ========================================================== */
+
+const API_BASE = "/api";
+let authToken = null;
+
+const authStorageKey  = "carManagerAuth";
+const tokenStorageKey = "carManagerToken";
+const settingsPassword = "352155++";
+
+/* ── DOM refs ── */
+const loginScreen           = document.getElementById("loginScreen");
+const loginButton           = document.getElementById("loginButton");
+const loginError            = document.getElementById("loginError");
+const loginUsername         = document.getElementById("loginUsername");
+const loginPassword         = document.getElementById("loginPassword");
+const appShell              = document.getElementById("appShell");
+const welcomeText           = document.getElementById("welcomeText");
+const userRoleBadge         = document.getElementById("userRoleBadge");
+const logoutButton          = document.getElementById("logoutButton");
+const newCarButton          = document.getElementById("newCarButton");
+const carModal              = document.getElementById("carModal");
+const closeModal            = document.getElementById("closeModal");
+const cancelModal           = document.getElementById("cancelModal");
+const carForm               = document.getElementById("carForm");
+const carName               = document.getElementById("carName");
+const carModel              = document.getElementById("carModel");
+const carPlate              = document.getElementById("carPlate");
+const carChassis            = document.getElementById("carChassis");
+const carArrival            = document.getElementById("carArrival");
+const carScheduledDeparture = document.getElementById("carScheduledDeparture");
+const modalTitle            = document.getElementById("modalTitle");
+const saveCarButton         = document.getElementById("saveCarButton");
+const carsTableBody         = document.getElementById("carsTableBody");
+const carsCards             = document.getElementById("carsCards");
+const filterText            = document.getElementById("filterText");
+const filterStatus          = document.getElementById("filterStatus");
+const totalCars             = document.getElementById("totalCars");
+const inStockCars           = document.getElementById("inStockCars");
+const outCars               = document.getElementById("outCars");
+const scheduledExitsCount   = document.getElementById("scheduledExitsCount");
+const avgStockDays          = document.getElementById("avgStockDays");
+const modelsCount           = document.getElementById("modelsCount");
+const modelsCtx             = document.getElementById("modelsChart").getContext("2d");
+const exitsCtx              = document.getElementById("exitsChart").getContext("2d");
+const statusCtx             = document.getElementById("statusChart").getContext("2d");
+const arrivalsCtx           = document.getElementById("arrivalsChart").getContext("2d");
+const appMessage            = document.getElementById("appMessage");
+const tabButtons            = Array.from(document.querySelectorAll(".tab-button"));
+const inventoryPanel        = document.getElementById("inventoryPanel");
+const dashboardPanel        = document.getElementById("dashboardPanel");
+const settingsPanel         = document.getElementById("settingsPanel");
+const settingsAuthModal     = document.getElementById("settingsAuthModal");
+const closeSettingsAuth     = document.getElementById("closeSettingsAuth");
+const cancelSettingsAuth    = document.getElementById("cancelSettingsAuth");
+const settingsAuthForm      = document.getElementById("settingsAuthForm");
+const settingsPasswordInput = document.getElementById("settingsPassword");
+const settingsError         = document.getElementById("settingsError");
+
+// Elementos de Configurações (Usuários e Permissões)
+const newUserButton         = document.getElementById("newUserButton");
+const usersTableBody        = document.getElementById("usersTableBody");
+const usersTab              = document.getElementById("usersTab");
+const permissionsTab        = document.getElementById("permissionsTab");
+const settingsTabBtns       = Array.from(document.querySelectorAll(".settings-tab-btn"));
+const permissionUserSelect  = document.getElementById("permissionUserSelect");
+const permissionsGridContainer = document.getElementById("permissionsGridContainer");
+const permissionsGrid       = document.getElementById("permissionsGrid");
+const userModal             = document.getElementById("userModal");
+const userModalTitle        = document.getElementById("userModalTitle");
+const closeUserModal        = document.getElementById("closeUserModal");
+const cancelUserModal       = document.getElementById("cancelUserModal");
+const userForm              = document.getElementById("userForm");
+const userName              = document.getElementById("userName");
+const userEmail             = document.getElementById("userEmail");
+const userPassword          = document.getElementById("userPassword");
+const userRole              = document.getElementById("userRole");
+const userStatus            = document.getElementById("userStatus");
+const saveUserButton        = document.getElementById("saveUserButton");
+const userFormError         = document.getElementById("userFormError");
+
+// Agenda
+const agendaPanel       = document.getElementById("agendaPanel");
+const newEventButton    = document.getElementById("newEventButton");
+const calGrid           = document.getElementById("calGrid");
+const calMonthLabel     = document.getElementById("calMonthLabel");
+const calPrev           = document.getElementById("calPrev");
+const calNext           = document.getElementById("calNext");
+const calToday          = document.getElementById("calToday");
+const agendaEventsList  = document.getElementById("agendaEventsList");
+
+// Modal evento
+const eventModal        = document.getElementById("eventModal");
+const closeEventModal   = document.getElementById("closeEventModal");
+const cancelEventModal  = document.getElementById("cancelEventModal");
+const eventForm         = document.getElementById("eventForm");
+const eventTitle        = document.getElementById("eventTitle");
+const eventDate         = document.getElementById("eventDate");
+const eventTime         = document.getElementById("eventTime");
+const eventType         = document.getElementById("eventType");
+const eventCar          = document.getElementById("eventCar");
+const eventVendor       = document.getElementById("eventVendor");
+const eventClient       = document.getElementById("eventClient");
+const eventNote         = document.getElementById("eventNote");
+const eventModalTitle   = document.getElementById("eventModalTitle");
+
+// Modal dia
+const dayModal          = document.getElementById("dayModal");
+const closeDayModal     = document.getElementById("closeDayModal");
+const closeDayModalBtn  = document.getElementById("closeDayModalBtn");
+const dayModalTitle     = document.getElementById("dayModalTitle");
+const dayModalBody      = document.getElementById("dayModalBody");
+const addEventFromDay   = document.getElementById("addEventFromDay");
+
+/* NOVOS ELEMENTOS PARA NOTIFICAÇÕES */
+const notificationBell       = document.getElementById("notificationBell");
+const notificationBadge      = document.getElementById("notificationBadge");
+const upcomingExitsButton    = document.getElementById("upcomingExitsButton");
+const notificationModal      = document.getElementById("notificationModal");
+const closeNotificationModal = document.getElementById("closeNotificationModal");
+const notificationModalBody  = document.getElementById("notificationModalBody");
+const upcomingModal          = document.getElementById("upcomingModal");
+const closeUpcomingModal     = document.getElementById("closeUpcomingModal");
+const upcomingModalBody      = document.getElementById("upcomingModalBody");
+
+/* ── State ── */
+let currentUser        = null;
+let cars               = [];
+let users              = [];
+let allPermissions     = [];
+let userPermissions    = {};
+let events             = [];
+let editingId          = null;
+let editingEventId     = null;
+let editingUserId      = null;
+let calCurrentDate     = new Date();
+let dayModalDate       = null;
+let eventDateFixed     = false;
+let modelsChart        = null;
+let exitsChart         = null;
+let statusChart        = null;
+let arrivalsChart      = null;
+let settingsAuthorized = false;
+
+/* ── Cores VW para gráficos ── */
+const VW = {
+  blue:      "#001E50",
+  blueLight: "#1a56c4",
+  green:     "#059669",
+  purple:    "#7C3AED",
+  amber:     "#D97706",
+};
+
+/* ==========================================================
+   DATA
+   ========================================================== */
+function apiFetch(path, options = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+  return fetch(`${API_BASE}${path}`, { ...options, headers });
+}
+
+function getRolePermissions(role) {
+  if (!role) return [];
+  if (role === "admin") return ["view", "add", "edit", "delete", "dashboard", "settings"];
+  if (role === "user") return ["view", "dashboard"];
+  return ["view"];
+}
+
+function canAdd() { return currentUser && getRolePermissions(currentUser.role).includes("add"); }
+function canEdit() { return currentUser && getRolePermissions(currentUser.role).includes("edit"); }
+function canDelete() { return currentUser && getRolePermissions(currentUser.role).includes("delete"); }
+
+async function loadCars() {
+  try {
+    const response = await apiFetch('/cars');
+    if (response.ok) {
+      cars = await response.json();
+    } else {
+      cars = [];
+      if (response.status === 401 || response.status === 403) {
+        clearAuth();
+      }
+    }
+  } catch (error) {
+    console.error('Error loading cars:', error);
+    cars = [];
+  }
+}
+
+async function createCar(data) {
+  const response = await apiFetch('/cars', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || 'Erro ao salvar veículo');
+  }
+  return await response.json();
+}
+
+async function updateCarData(id, data) {
+  const response = await apiFetch(`/cars/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || 'Erro ao atualizar veículo');
+  }
+  return await response.json();
+}
+
+async function deleteCarData(id) {
+  const response = await apiFetch(`/cars/${id}`, { method: 'DELETE' });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || 'Erro ao excluir veículo');
+  }
+  return await response.json();
+}
+
+function setAuth(user) {
+  console.log("CURRENT USER APÓS LOGIN"); // 29-07-2026
+  console.log(currentUser); // 29-07-2026
+  currentUser = user;
+  localStorage.setItem(authStorageKey, JSON.stringify(user));
+}
+
+function hasPermission(permission) {
+  if (!currentUser || !currentUser.permissions) return false;
+
+  return currentUser.permissions.some(p => p.name === permission);
+}
+
+function setAuthToken(token) {
+  authToken = token;
+  localStorage.setItem(tokenStorageKey, token);
+}
+
+function clearAuth() {
+  currentUser = null;
+  authToken = null;
+  localStorage.removeItem(authStorageKey);
+  localStorage.removeItem(tokenStorageKey);
+}
+
+function loadAuth() {
+  const storedUser = localStorage.getItem(authStorageKey);
+  const storedToken = localStorage.getItem(tokenStorageKey);
+  if (storedUser && storedToken) {
+    currentUser = JSON.parse(storedUser);
+    authToken = storedToken;
+  }
+}
+
+async function loadEvents() {
+  try {
+    const response = await apiFetch('/events');
+    if (response.ok) {
+      events = await response.json();
+    } else {
+      events = [];
+      if (response.status === 401 || response.status === 403) {
+        clearAuth();
+      }
+    }
+  } catch (error) {
+    console.error('Error loading events:', error);
+    events = [];
+  }
+}
+
+async function createEvent(data) {
+  const response = await apiFetch('/events', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || 'Erro ao salvar evento');
+  }
+  return await response.json();
+}
+
+async function updateEventData(id, data) {
+  const response = await apiFetch(`/events/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || 'Erro ao atualizar evento');
+  }
+  return await response.json();
+}
+
+async function deleteEventData(id) {
+  const response = await apiFetch(`/events/${id}`, { method: 'DELETE' });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || 'Erro ao excluir evento');
+  }
+  return await response.json();
+}
+
+// ========== USER MANAGEMENT FUNCTIONS ==========
+
+async function loadUsers() {
+  try {
+    const response = await apiFetch('/users');
+    if (response.ok) {
+      users = await response.json();
+    } else {
+      users = [];
+    }
+  } catch (error) {
+    console.error('Error loading users:', error);
+    users = [];
+  }
+}
+
+async function loadPermissions() {
+  try {
+    const response = await apiFetch('/permissions');
+    if (response.ok) {
+      allPermissions = await response.json();
+    } else {
+      allPermissions = [];
+    }
+  } catch (error) {
+    console.error('Error loading permissions:', error);
+    allPermissions = [];
+  }
+}
+
+async function loadUserPermissions(userId) {
+  try {
+    const response = await apiFetch(`/users/${userId}/permissions`);
+    if (response.ok) {
+      userPermissions[userId] = await response.json();
+    } else {
+      userPermissions[userId] = [];
+    }
+  } catch (error) {
+    console.error('Error loading user permissions:', error);
+    userPermissions[userId] = [];
+  }
+}
+
+async function createUser(data) {
+  const response = await apiFetch('/users', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || 'Erro ao criar usuário');
+  }
+  return await response.json();
+}
+
+async function updateUser(userId, data) {
+  const response = await apiFetch(`/users/${userId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || 'Erro ao atualizar usuário');
+  }
+  return await response.json();
+}
+
+async function updateUserPassword(userId, password) {
+  const response = await apiFetch(`/users/${userId}/password`, {
+    method: 'PUT',
+    body: JSON.stringify({ password })
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || 'Erro ao atualizar senha');
+  }
+  return await response.json();
+}
+
+async function deleteUser(userId) {
+  const response = await apiFetch(`/users/${userId}`, { method: 'DELETE' });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || 'Erro ao deletar usuário');
+  }
+  return await response.json();
+}
+
+async function grantPermission(userId, permissionId) {
+  const response = await apiFetch(`/users/${userId}/permissions/${permissionId}`, {
+    method: 'POST'
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || 'Erro ao conceder permissão');
+  }
+  return await response.json();
+}
+
+async function revokePermission(userId, permissionId) {
+  const response = await apiFetch(`/users/${userId}/permissions/${permissionId}`, {
+    method: 'DELETE'
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || 'Erro ao revogar permissão');
+  }
+  return await response.json();
+}
+
+function openUserModal(editId = null) {
+  editingUserId = editId;
+  userFormError.textContent = "";
+  
+  if (editId) {
+    const user = users.find(u => u.id === editId);
+    if (user) {
+      userModalTitle.textContent = `Editar usuário: ${user.username}`;
+      userName.value = user.username;
+      userEmail.value = user.email || "";
+      userPassword.value = "";
+      userPassword.placeholder = "Deixe em branco para não alterar";
+      userRole.value = user.role;
+      userStatus.value = user.status;
+      userName.disabled = true;
+    }
+  } else {
+    userModalTitle.textContent = "Novo usuário";
+    userName.value = "";
+    userEmail.value = "";
+    userPassword.value = "";
+    userPassword.placeholder = "Digite uma senha";
+    userRole.value = "user";
+    userStatus.value = "active";
+    userName.disabled = false;
+  }
+  
+  userModal.classList.remove("hidden");
+}
+
+function closeUserModalWindow() {
+  userModal.classList.add("hidden");
+  editingUserId = null;
+  userName.disabled = false;
+}
+
+function renderUsersTable() {
+  usersTableBody.innerHTML = "";
+  
+  if (!users || users.length === 0) {
+    usersTableBody.innerHTML = `<tr><td colspan="5" class="empty-row">Nenhum usuário encontrado</td></tr>`;
+    return;
+  }
+
+  users.forEach(user => {
+    const row = document.createElement("tr");
+    const statusBadge = user.status === 'active' 
+      ? '<span style="background:#059669;color:white;padding:3px 8px;border-radius:4px;font-size:0.8rem;">Ativo</span>'
+      : '<span style="background:#dc2626;color:white;padding:3px 8px;border-radius:4px;font-size:0.8rem;">Inativo</span>';
+    
+    row.innerHTML = `
+      <td><strong>${user.username}</strong></td>
+      <td>${user.email || "—"}</td>
+      <td><span style="background:#001E50;color:white;padding:3px 8px;border-radius:4px;font-size:0.8rem;">${user.role === 'admin' ? 'Administrador' : 'Usuário'}</span></td>
+      <td>${statusBadge}</td>
+      <td class="actions"></td>
+    `;
+
+    const actions = row.querySelector(".actions");
+    
+    const editBtn = document.createElement("button");
+    editBtn.className = "edit";
+    editBtn.textContent = "Editar";
+    editBtn.onclick = () => openUserModal(user.id);
+    actions.appendChild(editBtn);
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "delete";
+    deleteBtn.textContent = "Deletar";
+    deleteBtn.onclick = () => removeUser(user.id, user.username);
+    actions.appendChild(deleteBtn);
+
+    usersTableBody.appendChild(row);
+  });
+}
+
+async function removeUser(userId, username) {
+  if (currentUser && currentUser.id === userId) {
+    alert("Você não pode deletar sua própria conta!");
+    return;
+  }
+
+  if (!confirm(`Deseja realmente deletar o usuário "${username}"?`)) return;
+
+  try {
+    await deleteUser(userId);
+    showAppMessage(`Usuário "${username}" deletado com sucesso.`, "info");
+    await loadUsers();
+    renderUsersTable();
+    populatePermissionUserSelect();
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    alert(error.message || 'Erro ao deletar usuário');
+  }
+}
+
+function populatePermissionUserSelect() {
+  permissionUserSelect.innerHTML = '<option value="">— Escolha um usuário —</option>';
+  
+  users.forEach(user => {
+    const opt = document.createElement("option");
+    opt.value = user.id;
+    opt.textContent = `${user.username} (${user.role})`;
+    permissionUserSelect.appendChild(opt);
+  });
+}
+
+async function renderPermissionsGrid(userId) {
+  permissionsGrid.innerHTML = "";
+  
+  if (!userId) {
+    permissionsGridContainer.style.display = "none";
+    return;
+  }
+
+  permissionsGridContainer.style.display = "block";
+
+  await loadUserPermissions(userId);
+  const userPerms = userPermissions[userId] || [];
+
+  // Agrupar permissões por categoria
+  const categories = {};
+  allPermissions.forEach(perm => {
+    const cat = perm.category || 'Outro';
+    if (!categories[cat]) categories[cat] = [];
+    categories[cat].push(perm);
+  });
+
+  // Renderizar categorias
+  Object.keys(categories).sort().forEach(catName => {
+    const catDiv = document.createElement("div");
+    catDiv.className = "permissions-category";
+    
+    const catTitle = document.createElement("h4");
+    catTitle.textContent = catName;
+    catDiv.appendChild(catTitle);
+
+    categories[catName].forEach(perm => {
+      const hasPermission = userPerms.some(up => up.id === perm.id);
+      
+      const label = document.createElement("label");
+      label.style.display = "flex";
+      label.style.alignItems = "center";
+      label.style.gap = "8px";
+      label.style.marginBottom = "8px";
+      label.style.cursor = "pointer";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = hasPermission;
+      checkbox.dataset.permissionId = perm.id;
+      checkbox.dataset.permissionName = perm.name;
+      checkbox.onchange = () => handlePermissionChange(userId, perm.id, checkbox.checked);
+
+      const text = document.createElement("span");
+      text.innerHTML = `<strong>${perm.name}</strong><br><small style="color:var(--text-muted);">${perm.description || ''}</small>`;
+
+      label.appendChild(checkbox);
+      label.appendChild(text);
+      catDiv.appendChild(label);
+    });
+
+    permissionsGrid.appendChild(catDiv);
+  });
+}
+
+async function handlePermissionChange(userId, permissionId, granted) {
+  try {
+    if (granted) {
+      await grantPermission(userId, permissionId);
+    } else {
+      await revokePermission(userId, permissionId);
+    }
+    // Recarregar permissões
+    await loadUserPermissions(userId);
+    await renderPermissionsGrid(userId);
+  } catch (error) {
+    console.error('Error changing permission:', error);
+    alert(error.message || 'Erro ao alterar permissão');
+  }
+}
+
+function switchSettingsTab(tabName) {
+  settingsTabBtns.forEach(btn => btn.classList.toggle("active", btn.dataset.settingsTab === tabName));
+  usersTab.classList.toggle("hidden", tabName !== "users");
+  permissionsTab.classList.toggle("hidden", tabName !== "permissions");
+}
+
+/* ==========================================================
+   UI HELPERS
+   ========================================================== */
+function showAppMessage(message, type = "danger") {
+  appMessage.textContent = message;
+  appMessage.classList.remove("hidden", "info");
+  if (type === "info") appMessage.classList.add("info");
+  clearTimeout(appMessage._timeout);
+  appMessage._timeout = setTimeout(() => appMessage.classList.add("hidden"), 4500);
+}
+
+function clearAppMessage() {
+  appMessage.classList.add("hidden");
+  appMessage.textContent = "";
+  clearTimeout(appMessage._timeout);
+}
+
+function updatePermissionUI() {
+  newCarButton.style.display = canAdd() ? "inline-flex" : "none";
+}
+
+function setActiveTab(tabName) {
+  inventoryPanel.classList.toggle("hidden", tabName !== "consulta");
+  dashboardPanel.classList.toggle("hidden", tabName !== "dashboard");
+  agendaPanel.classList.toggle("hidden",    tabName !== "agenda");
+  settingsPanel.classList.toggle("hidden",  tabName !== "settings");
+  tabButtons.forEach(b => b.classList.toggle("active", b.dataset.tab === tabName));
+  if (tabName === "dashboard") updateDashboard();
+  if (tabName === "agenda")    renderCalendar();
+}
+
+function formatDateTime(str) {
+  if (!str) return "";
+  return new Date(str).toLocaleString("pt-BR", {
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit"
+  });
+}
+
+/* ==========================================================
+   NOTIFICAÇÕES
+   ========================================================== */
+function getUpcomingExits(daysAhead = 7) {
+  const now = new Date();
+  const future = new Date();
+  future.setDate(now.getDate() + daysAhead);
+  return events.filter(ev => ev.type === "saida" && ev.date).filter(ev => {
+    const dt = getEventDateTime(ev);
+    return dt >= now && dt <= future;
+  }).sort((a, b) => getEventDateTime(a) - getEventDateTime(b));
+}
+
+function getImmediateExits() {
+  const now = new Date();
+  const tomorrow = new Date();
+  tomorrow.setDate(now.getDate() + 1);
+  tomorrow.setHours(23, 59, 59, 999);
+  return events.filter(ev => ev.type === "saida" && ev.date).filter(ev => {
+    const dt = getEventDateTime(ev);
+    return dt >= now && dt <= tomorrow;
+  }).sort((a, b) => getEventDateTime(a) - getEventDateTime(b));
+}
+
+function updateNotifications() {
+  const immediate = getImmediateExits();
+  notificationBadge.classList.toggle("hidden", immediate.length === 0);
+}
+
+function showNotificationModal() {
+  const immediate = getImmediateExits();
+  notificationModalBody.innerHTML = "";
+  if (immediate.length === 0) {
+    notificationModalBody.innerHTML = "<p>Nenhuma saída programada para hoje ou amanhã.</p>";
+  } else {
+    immediate.forEach(ev => {
+      const car = ev.carId ? cars.find(c => c.id === ev.carId) : null;
+      const item = document.createElement("div");
+      item.className = "notification-item";
+      item.innerHTML = `
+        <strong>${car ? car.name : (ev.title || 'Saída')}</strong><br>
+        ${car ? `Placa: ${car.plate}<br>` : ""}
+        ${ev.vendor ? `Vendedor: ${ev.vendor}<br>` : ""}
+        Saída: ${ev.date} ${ev.time || "00:00"}
+      `;
+      notificationModalBody.appendChild(item);
+    });
+  }
+  notificationModal.classList.remove("hidden");
+}
+
+function showUpcomingModal() {
+  const upcoming = getUpcomingExits(7);
+  upcomingModalBody.innerHTML = "";
+  if (upcoming.length === 0) {
+    upcomingModalBody.innerHTML = "<p>Nenhuma saída programada nos próximos 7 dias.</p>";
+  } else {
+    upcoming.forEach(ev => {
+      const car = ev.carId ? cars.find(c => c.id === ev.carId) : null;
+      const item = document.createElement("div");
+      item.className = "notification-item";
+      item.innerHTML = `
+        <strong>${car ? car.name : (ev.title || 'Saída')}</strong><br>
+        ${car ? `Placa: ${car.plate}<br>` : ""}
+        ${ev.vendor ? `Vendedor: ${ev.vendor}<br>` : ""}
+        Saída: ${ev.date} ${ev.time || "00:00"}
+      `;
+      upcomingModalBody.appendChild(item);
+    });
+  }
+  upcomingModal.classList.remove("hidden");
+}
+
+/* ==========================================================
+   SETTINGS
+   ========================================================== */
+function openSettingsAuth() {
+  settingsPasswordInput.value = "";
+  settingsError.textContent   = "";
+  settingsAuthModal.classList.remove("hidden");
+}
+
+function closeSettingsAuthModal() { settingsAuthModal.classList.add("hidden"); }
+
+function renderSettingsPanel() {
+  settingsTableBody.innerHTML = "";
+  if (!users.length) {
+    settingsTableBody.innerHTML = `<tr><td colspan="6" class="empty-row">Nenhum usuário configurado para edição local.</td></tr>`;
+    return;
+  }
+
+  users.forEach(user => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td><strong>${user.username}</strong></td>
+      <td><span class="role-badge">${user.role}</span></td>
+      ${["view","add","edit","delete","dashboard"].map(p => `
+        <td><input type="checkbox" data-user="${user.username}" data-permission="${p}" ${user.permissions.includes(p) ? "checked" : ""} /></td>
+      `).join("")}
+    `;
+    settingsTableBody.appendChild(row);
+  });
+}
+
+function handleSettingsPermissionChange(event) {
+  if (event.target.tagName !== "INPUT") return;
+  if (!users.length) return;
+  const username   = event.target.dataset.user;
+  const permission = event.target.dataset.permission;
+  const user = users.find(u => u.username === username);
+  if (!user) return;
+  if (event.target.checked) {
+    if (!user.permissions.includes(permission)) user.permissions.push(permission);
+  } else {
+    user.permissions = user.permissions.filter(p => p !== permission);
+  }
+  if (currentUser && currentUser.username === username) { setAuth(user); updatePermissionUI(); }
+}
+
+/* ==========================================================
+   MODAL VEÍCULO
+   ========================================================== */
+function openModal(editId = null) {
+  editingId = editId;
+  carModal.classList.remove("hidden");
+  if (editingId) {
+    const car = cars.find(c => c.id === editingId);
+    if (car) {
+      modalTitle.textContent          = "Editar veículo";
+      carName.value                   = car.name;
+      carModel.value                  = car.model;
+      carPlate.value                  = car.plate;
+      carChassis.value                = car.chassis;
+      carArrival.value                = car.arrivalDate;
+      carScheduledDeparture.value     = car.scheduledDeparture || "";
+    }
+  } else {
+    modalTitle.textContent            = "Registrar chegada";
+    carName.value                     = "";
+    carModel.value                    = "";
+    carPlate.value                    = "";
+    carChassis.value                  = "";
+    carArrival.value                  = new Date().toISOString().slice(0, 16);
+    carScheduledDeparture.value       = "";
+  }
+}
+
+function closeModalWindow() { carModal.classList.add("hidden"); editingId = null; }
+
+/* ==========================================================
+   TABELA
+   ========================================================== */
+function getFilteredCars() {
+  const query  = filterText.value.trim().toLowerCase();
+  const status = filterStatus.value;
+  return cars.filter(car => {
+    const matchText = [car.name, car.model, car.plate, car.chassis].some(f => f.toLowerCase().includes(query));
+    const matchStatus = status === "all" ? true : status === "in" ? car.departureDate === "" : car.departureDate !== "";
+    return matchText && matchStatus;
+  });
+}
+
+async function checkScheduledDepartures() {
+  const now = new Date();
+  const updates = [];
+
+  for (const car of cars) {
+    if (car.scheduledDeparture && !car.departureDate) {
+      const scheduled = new Date(car.scheduledDeparture);
+      if (!isNaN(scheduled) && scheduled <= now) {
+        car.departureDate = car.scheduledDeparture;
+        updates.push(updateCarData(car.id, { departureDate: car.departureDate }));
+      }
+    }
+  }
+
+  if (updates.length > 0) {
+    try {
+      await Promise.all(updates);
+      await loadCars();
+      if (currentUser) {
+        renderCarsTable();
+        updateDashboard();
+        showAppMessage("Saídas agendadas processadas automaticamente.", "info");
+      }
+    } catch (error) {
+      console.error('Error processing scheduled departures:', error);
+    }
+  }
+}
+
+function renderCarsTable() {
+  carsTableBody.innerHTML = "";
+  const carsCards = document.getElementById("carsCards");
+  carsCards.innerHTML = "";
+  const filtered  = getFilteredCars();
+  const canEditFlag   = canEdit();
+  const canDeleteFlag = canDelete();
+
+  if (filtered.length === 0) {
+    carsTableBody.innerHTML = `<tr><td colspan="8" class="empty-row">Nenhum veículo encontrado</td></tr>`;
+    carsCards.innerHTML = `<div class="empty-row" style="padding: 48px; text-align: center; color: var(--text-muted); font-size: 0.9rem;">Nenhum veículo encontrado</div>`;
+    return;
+  }
+
+  filtered.forEach(car => {
+    const inStock = car.departureDate === "";
+    const row = document.createElement("tr");
+    row.classList.toggle("scheduled-row", !!(car.scheduledDeparture && !car.departureDate));
+
+    row.innerHTML = `
+      <td data-label="Veículo"><strong>${car.name}</strong></td>
+      <td data-label="Modelo">${car.model}</td>
+      <td data-label="Placa"><span class="plate-code">${car.plate}</span></td>
+      <td data-label="Chassi"><span class="chassis-code">${car.chassis}</span></td>
+      <td data-label="Chegada">${formatDateTime(car.arrivalDate)}</td>
+      <td data-label="Saída prevista">
+        ${car.scheduledDeparture
+          ? `${formatDateTime(car.scheduledDeparture)} ${!car.departureDate ? "<span class='scheduled-badge'>Agendado</span>" : ""}`
+          : "—"}
+      </td>
+      <td data-label="Status">
+        ${inStock
+          ? `<span class="status-pill status-in">Em estoque</span>`
+          : `<span class="status-pill status-out">Saiu ${formatDateTime(car.departureDate)}</span>`}
+      </td>
+      <td class="actions" data-label="Ações"></td>
+    `;
+
+    const actions = row.querySelector(".actions");
+
+    if (canEditFlag) {
+      const btn = document.createElement("button");
+      btn.className = "edit"; btn.textContent = "Editar";
+      btn.onclick = () => openModal(car.id);
+      actions.appendChild(btn);
+    }
+
+    if (canDeleteFlag) {
+      const btn = document.createElement("button");
+      btn.className = "delete"; btn.textContent = "Excluir";
+      btn.onclick = () => removeCar(car.id);
+      actions.appendChild(btn);
+    }
+
+    if (inStock && canEditFlag) {
+      const btn = document.createElement("button");
+      btn.className = "exit"; btn.textContent = "Registrar saída";
+      btn.onclick = () => markAsExited(car.id);
+      actions.appendChild(btn);
+    }
+
+    carsTableBody.appendChild(row);
+
+    // Render card for mobile
+    const card = document.createElement("div");
+    card.className = "car-card";
+    card.classList.toggle("scheduled-row", !!(car.scheduledDeparture && !car.departureDate));
+
+    card.innerHTML = `
+      <div class="car-card-header">
+        <div class="car-card-title">${car.name}</div>
+        <div class="car-card-status">
+          ${inStock
+            ? `<span class="status-pill status-in">Em estoque</span>`
+            : `<span class="status-pill status-out">Saiu</span>`}
+        </div>
+      </div>
+      <div class="car-card-detail">
+        <strong>Modelo:</strong> <span>${car.model}</span>
+      </div>
+      <div class="car-card-detail">
+        <strong>Placa:</strong> <span class="plate-code">${car.plate}</span>
+      </div>
+      <div class="car-card-detail">
+        <strong>Chassi:</strong> <span class="chassis-code">${car.chassis}</span>
+      </div>
+      <div class="car-card-detail">
+        <strong>Chegada:</strong> <span>${formatDateTime(car.arrivalDate)}</span>
+      </div>
+      <div class="car-card-detail">
+        <strong>Saída prevista:</strong> <span>${car.scheduledDeparture ? formatDateTime(car.scheduledDeparture) + (!car.departureDate ? " (Agendado)" : "") : "—"}</span>
+      </div>
+      <div class="car-card-actions"></div>
+    `;
+
+    const cardActions = card.querySelector(".car-card-actions");
+
+    if (canEditFlag) {
+      const btn = document.createElement("button");
+      btn.className = "edit"; btn.textContent = "Editar";
+      btn.onclick = () => openModal(car.id);
+      cardActions.appendChild(btn);
+    }
+
+    if (canDeleteFlag) {
+      const btn = document.createElement("button");
+      btn.className = "delete"; btn.textContent = "Excluir";
+      btn.onclick = () => removeCar(car.id);
+      cardActions.appendChild(btn);
+    }
+
+    if (inStock && canEditFlag) {
+      const btn = document.createElement("button");
+      btn.className = "exit"; btn.textContent = "Registrar saída";
+      btn.onclick = () => markAsExited(car.id);
+      cardActions.appendChild(btn);
+    }
+
+    carsCards.appendChild(card);
+  });
+}
+
+async function removeCar(id) {
+  if (!confirm("Deseja realmente excluir este veículo?")) return;
+  try {
+    await deleteCarData(id);
+    await loadCars();
+    renderCarsTable();
+    updateDashboard();
+  } catch (error) {
+    console.error('Error deleting car:', error);
+    alert('Erro ao excluir veículo');
+  }
+}
+
+function confirmExitPlate(car) {
+  if (!car) return false;
+  while (true) {
+    const plate = prompt(`Digite a placa do veículo ${car.name} para confirmar a saída:`);
+    if (plate === null) return false;
+    if (plate.trim().toUpperCase() === car.plate.toUpperCase()) return true;
+    alert("Placa incorreta. Saída não registrada.");
+  }
+}
+
+async function markAsExited(id) {
+  const car = cars.find(c => c.id === id);
+  if (!car) return;
+  if (!confirmExitPlate(car)) return;
+  const departureDate = new Date().toISOString().slice(0, 16);
+  try {
+    await updateCarData(id, { departureDate });
+    await loadCars();
+    renderCarsTable();
+    updateDashboard();
+  } catch (error) {
+    console.error('Error updating departure date:', error);
+    alert('Erro ao registrar saída');
+  }
+}
+
+/* ==========================================================
+   DASHBOARD
+   ========================================================== */
+function renderDashboard() {
+  const total          = cars.length;
+  const exited         = cars.filter(c => c.departureDate !== "").length;
+  const inStock        = total - exited;
+  const scheduledCount = cars.filter(c => c.scheduledDeparture && !c.departureDate).length;
+  const models = {}, exitsByMonth = {}, arrivalsByMonth = {}, stockDays = [];
+
+  cars.forEach(car => {
+    models[car.model] = (models[car.model] || 0) + 1;
+    const am = new Date(car.arrivalDate).toLocaleString("pt-BR", { month: "2-digit", year: "numeric" });
+    arrivalsByMonth[am] = (arrivalsByMonth[am] || 0) + 1;
+    if (car.departureDate) {
+      const m = new Date(car.departureDate).toLocaleString("pt-BR", { month: "2-digit", year: "numeric" });
+      exitsByMonth[m] = (exitsByMonth[m] || 0) + 1;
+      const d = (new Date(car.departureDate) - new Date(car.arrivalDate)) / 86400000;
+      if (!isNaN(d) && d >= 0) stockDays.push(d);
+    }
+  });
+
+  totalCars.textContent           = total;
+  inStockCars.textContent         = inStock;
+  outCars.textContent             = exited;
+  scheduledExitsCount.textContent = scheduledCount;
+  modelsCount.textContent         = Object.keys(models).length;
+  avgStockDays.textContent        = stockDays.length
+    ? (stockDays.reduce((a, b) => a + b, 0) / stockDays.length).toFixed(1) : "0";
+
+  const gridOpts = {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(0,0,0,0.04)" } },
+      x: { grid: { display: false } }
+    }
+  };
+
+  if (modelsChart) modelsChart.destroy();
+  modelsChart = new Chart(modelsCtx, {
+    type: "bar",
+    data: { labels: Object.keys(models), datasets: [{ label: "Quantidade", data: Object.values(models), backgroundColor: VW.blue, borderRadius: 8 }] },
+    options: gridOpts
+  });
+
+  if (exitsChart) exitsChart.destroy();
+  const exitLabels = Object.keys(exitsByMonth).sort();
+  exitsChart = new Chart(exitsCtx, {
+    type: "line",
+    data: { labels: exitLabels, datasets: [{ label: "Saídas", data: exitLabels.map(l => exitsByMonth[l]), borderColor: VW.blue, backgroundColor: "rgba(0,30,80,0.08)", fill: true, tension: 0.4, pointRadius: 5, pointBackgroundColor: VW.blue }] },
+    options: gridOpts
+  });
+
+  if (statusChart) statusChart.destroy();
+  statusChart = new Chart(statusCtx, {
+    type: "doughnut",
+    data: { labels: ["Em estoque", "Saíram"], datasets: [{ data: [inStock, exited], backgroundColor: [VW.blue, VW.green], hoverOffset: 8, borderWidth: 0 }] },
+    options: { responsive: true, plugins: { legend: { position: "bottom", labels: { padding: 16, boxWidth: 14, usePointStyle: true } } } }
+  });
+
+  if (arrivalsChart) arrivalsChart.destroy();
+  const arrivalLabels = Object.keys(arrivalsByMonth).sort();
+  arrivalsChart = new Chart(arrivalsCtx, {
+    type: "bar",
+    data: { labels: arrivalLabels, datasets: [{ label: "Entradas", data: arrivalLabels.map(l => arrivalsByMonth[l]), backgroundColor: VW.green, borderRadius: 8 }] },
+    options: gridOpts
+  });
+}
+
+function updateDashboard() { renderDashboard(); }
+
+/* ==========================================================
+   APP INIT / AUTH
+   ========================================================== */
+async function renderApp() {
+  console.log("renderApp()"); // 29-07-2026
+  console.log(currentUser); // 29-07-2026
+  welcomeText.textContent   = `Olá, ${currentUser.role}`;
+  userRoleBadge.textContent = currentUser.role;
+  updatePermissionUI();
+  await loadCars();
+  await loadEvents();
+  
+  // Carregar usuários e permissões se for admin
+  if (currentUser.role === 'admin') {
+    await loadUsers();
+    await loadPermissions();
+    renderUsersTable();
+  }
+  
+  renderCarsTable();
+  updateDashboard();
+  updateNotifications();
+  clearAppMessage();
+  setActiveTab("consulta");
+}
+
+function showApp()   { loginScreen.classList.add("hidden");    appShell.classList.remove("hidden"); }
+function showLogin() { loginScreen.classList.remove("hidden"); appShell.classList.add("hidden"); }
+
+/* ==========================================================
+   AGENDA — CALENDÁRIO
+   ========================================================== */
+
+const EVENT_TYPES = {
+  saida:   { label: "Saída",      icon: "🚗" },
+  chegada: { label: "Chegada",    icon: "📦" },
+  revisao: { label: "Revisão",    icon: "🔧" },
+  entrega: { label: "Entrega",    icon: "🤝" },
+  outro:   { label: "Outro",      icon: "📌" },
+};
+
+function dateKey(y, m, d) {
+  return `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+}
+
+function getEventDateTime(event) {
+  if (!event || !event.date) return new Date(0);
+  const time = event.time || "12:00";
+  return new Date(`${event.date}T${time}`);
+}
+
+function eventsForDate(dateStr) {
+  return events.filter(e => e.date === dateStr);
+}
+
+function eventsForMonth(year, month) {
+  const prefix = `${year}-${String(month+1).padStart(2,"0")}`;
+  return events.filter(e => e.date.startsWith(prefix));
+}
+
+function renderCalendar() {
+  const year  = calCurrentDate.getFullYear();
+  const month = calCurrentDate.getMonth();
+
+  const monthNames = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+  calMonthLabel.textContent = `${monthNames[month]} ${year}`;
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const daysInPrev  = new Date(year, month, 0).getDate();
+
+  const today = new Date();
+  const todayStr = dateKey(today.getFullYear(), today.getMonth(), today.getDate());
+
+  calGrid.innerHTML = "";
+
+  // Dias do mês anterior
+  for (let i = firstDay - 1; i >= 0; i--) {
+    const d = daysInPrev - i;
+    const y2 = month === 0 ? year-1 : year;
+    const m2 = month === 0 ? 11 : month-1;
+    const cell = buildDayCell(y2, m2, d, true, todayStr);
+    calGrid.appendChild(cell);
+  }
+
+  // Dias do mês atual
+  for (let d = 1; d <= daysInMonth; d++) {
+    const cell = buildDayCell(year, month, d, false, todayStr);
+    calGrid.appendChild(cell);
+  }
+
+  // Completar a última linha
+  const total = firstDay + daysInMonth;
+  const remaining = total % 7 === 0 ? 0 : 7 - (total % 7);
+  const y2 = month === 11 ? year+1 : year;
+  const m2 = month === 11 ? 0 : month+1;
+  for (let d = 1; d <= remaining; d++) {
+    const cell = buildDayCell(y2, m2, d, true, todayStr);
+    calGrid.appendChild(cell);
+  }
+
+  renderEventsList(year, month);
+}
+
+function buildDayCell(year, month, day, otherMonth, todayStr) {
+  const dStr = dateKey(year, month, day);
+  const dayEvs = eventsForDate(dStr);
+  const isToday = dStr === todayStr;
+
+  const cell = document.createElement("div");
+  cell.className = "cal-day" +
+    (otherMonth ? " other-month" : "") +
+    (isToday ? " today" : "") +
+    (dayEvs.length > 0 ? " has-events" : "");
+  cell.dataset.date = dStr;
+
+  const numEl = document.createElement("div");
+  numEl.className = "cal-day-num";
+  numEl.textContent = day;
+  cell.appendChild(numEl);
+
+  // Mostrar até 2 chips de evento
+  const visible = dayEvs.slice(0, 2);
+  visible.forEach(ev => {
+    const chip = document.createElement("span");
+    chip.className = `cal-event-chip type-${ev.type}`;
+    const t = EVENT_TYPES[ev.type] || EVENT_TYPES.outro;
+    const label = ev.title ? ev.title : t.label;
+    const time = ev.time ? ` ${ev.time}` : "";
+    chip.textContent = `${t.icon}${time} ${label}`;
+    chip.title = label;
+    cell.appendChild(chip);
+  });
+
+  if (dayEvs.length > 2) {
+    const more = document.createElement("div");
+    more.className = "cal-more";
+    more.textContent = `+${dayEvs.length - 2} mais`;
+    cell.appendChild(more);
+  }
+
+  cell.addEventListener("click", () => openDayModal(dStr, dayEvs));
+  return cell;
+}
+
+function renderEventsList(year, month) {
+  const monthEvs = eventsForMonth(year, month)
+    .slice()
+    .sort((a,b) => a.date.localeCompare(b.date));
+
+  agendaEventsList.innerHTML = "";
+
+  const title = document.createElement("h4");
+  title.textContent = "Todos os eventos do mês";
+  agendaEventsList.appendChild(title);
+
+  if (monthEvs.length === 0) {
+    const msg = document.createElement("p");
+    msg.className = "no-events-msg";
+    msg.textContent = "Nenhum evento registrado neste mês.";
+    agendaEventsList.appendChild(msg);
+    return;
+  }
+
+  monthEvs.forEach(ev => {
+    const car = ev.carId ? cars.find(c => c.id === ev.carId) : null;
+    const t   = EVENT_TYPES[ev.type] || EVENT_TYPES.outro;
+
+    const [y, m, d] = ev.date.split("-");
+    const dateFormatted = new Date(ev.date + "T12:00").toLocaleDateString("pt-BR", { weekday:"short", day:"2-digit", month:"short" });
+    const timeLabel = ev.time ? `⏰ ${ev.time}` : "";
+
+    const item = document.createElement("div");
+    item.className = "event-list-item";
+    item.innerHTML = `
+      <div class="event-list-dot dot-${ev.type}"></div>
+      <div class="event-list-info">
+        <div class="event-list-title">${t.icon} ${ev.title || t.label}</div>
+        <div class="event-list-meta">
+          <span>📅 ${dateFormatted}</span>
+          ${timeLabel ? `<span>${timeLabel}</span>` : ""}
+          <span>${t.label}</span>
+          ${car ? `<span class="event-list-car">🚗 ${car.name} · ${car.plate}</span>` : ""}
+          <span>🧑‍💼 ${ev.vendor}</span>
+          ${ev.client ? `<span>👤 ${ev.client}</span>` : ""}
+          ${ev.note ? `<span>📝 ${ev.note}</span>` : ""}
+        </div>
+      </div>
+      <div class="event-list-actions"></div>
+    `;
+
+    const acts = item.querySelector(".event-list-actions");
+
+    const editBtn = document.createElement("button");
+    editBtn.className = "edit";
+    editBtn.textContent = "Editar";
+    editBtn.onclick = () => openEventModal(ev.id);
+    acts.appendChild(editBtn);
+
+    const delBtn = document.createElement("button");
+    delBtn.className = "delete";
+    delBtn.textContent = "Excluir";
+    delBtn.onclick = () => deleteEvent(ev.id);
+    acts.appendChild(delBtn);
+
+    agendaEventsList.appendChild(item);
+  });
+}
+
+/* ── Modal Dia ── */
+function openDayModal(dateStr, dayEvs) {
+  dayModalDate = dateStr;
+  const [y, m, d] = dateStr.split("-");
+  const label = new Date(dateStr + "T12:00").toLocaleDateString("pt-BR", { weekday:"long", day:"2-digit", month:"long", year:"numeric" });
+  dayModalTitle.textContent = label.charAt(0).toUpperCase() + label.slice(1);
+
+  dayModalBody.innerHTML = "";
+
+  if (dayEvs.length === 0) {
+    dayModalBody.innerHTML = `<p class="day-no-events">Nenhum evento neste dia. Clique em "+ Adicionar evento" para criar.</p>`;
+  } else {
+    dayEvs.forEach(ev => {
+      const car = ev.carId ? cars.find(c => c.id === ev.carId) : null;
+      const t   = EVENT_TYPES[ev.type] || EVENT_TYPES.outro;
+      const item = document.createElement("div");
+      item.className = "day-event-item";
+      item.innerHTML = `
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+            <span class="day-event-type-badge cal-event-chip type-${ev.type}">${t.icon} ${t.label}</span>
+            <strong style="font-size:0.9rem;">${ev.title || t.label}</strong>
+          </div>
+          ${ev.time ? `<div style="font-size:0.8rem;color:var(--text-muted)">⏰ ${ev.time}</div>` : ""}
+          ${car ? `<div style="font-size:0.8rem;color:var(--text-muted)">🚗 ${car.name} · <span class="plate-code">${car.plate}</span></div>` : ""}
+          <div style="font-size:0.8rem;color:var(--text-muted)">🧑‍💼 ${ev.vendor}</div>
+          ${ev.client ? `<div style="font-size:0.8rem;color:var(--text-muted)">👤 ${ev.client}</div>` : ""}
+          ${ev.note ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-top:3px;">📝 ${ev.note}</div>` : ""}
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;align-items:flex-start;"></div>
+      `;
+      const acts = item.querySelector("div:last-child");
+
+      const editBtn = document.createElement("button");
+      editBtn.className = "actions"; // reutiliza estilos
+      const eb = document.createElement("button");
+      eb.className = "edit"; eb.textContent = "Editar";
+      eb.onclick = () => { closeDayModalFn(); openEventModal(ev.id); };
+      acts.appendChild(eb);
+
+      const db = document.createElement("button");
+      db.className = "delete"; db.textContent = "Excluir";
+      db.onclick = () => { deleteEvent(ev.id); closeDayModalFn(); };
+      acts.appendChild(db);
+
+      dayModalBody.appendChild(item);
+    });
+  }
+
+  dayModal.classList.remove("hidden");
+}
+
+function closeDayModalFn() { dayModal.classList.add("hidden"); dayModalDate = null; }
+
+/* ── Modal Evento ── */
+function populateEventCarSelect() {
+  eventCar.innerHTML = `<option value="">— Nenhum veículo —</option>`;
+  cars.filter(c => c.departureDate === "").forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c.id;
+    opt.textContent = `${c.name} · ${c.plate}`;
+    eventCar.appendChild(opt);
+  });
+}
+
+function openEventModal(editId = null, prefillDate = null) {
+  editingEventId = editId;
+  populateEventCarSelect();
+  eventModalTitle.textContent = editId ? "Editar Evento" : "Novo Evento";
+  eventDateFixed = !!prefillDate;
+
+  if (editId) {
+    const ev = events.find(e => e.id === editId);
+    if (ev) {
+      eventTitle.value = ev.title || "";
+      eventDate.value  = ev.date;
+      eventTime.value  = ev.time || "";
+      eventType.value  = ["saida","entrega"].includes(ev.type) ? ev.type : "saida";
+      eventCar.value   = ev.carId || "";
+      eventVendor.value = ev.vendor || "";
+      eventClient.value = ev.client || "";
+      eventNote.value  = ev.note || "";
+    }
+  } else {
+    eventTitle.value = "";
+    eventDate.value  = prefillDate || new Date().toISOString().slice(0,10);
+    eventTime.value  = "";
+    eventType.value  = "saida";
+    eventCar.value   = "";
+    eventVendor.value = "";
+    eventClient.value = "";
+    eventNote.value  = "";
+  }
+
+  eventDate.disabled = eventDateFixed;
+  eventModal.classList.remove("hidden");
+}
+
+function closeEventModalFn() { eventModal.classList.add("hidden"); editingEventId = null; eventDate.disabled = false; eventDateFixed = false; }
+
+async function deleteEvent(id) {
+  if (!confirm("Excluir este evento?")) return;
+  try {
+    await deleteEventData(id);
+    await loadEvents();
+    renderCalendar();
+  } catch (error) {
+    console.error('Error deleting event:', error);
+    alert('Erro ao excluir evento');
+  }
+}
+
+/* ==========================================================
+   EVENTOS
+   ========================================================== */
+loginButton.addEventListener("click", async () => {
+  const username = loginUsername.value.trim();
+  const password = loginPassword.value.trim();
+
+  try {
+    const response = await fetch(`${API_BASE}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+
+if (!response.ok) {
+  const txt = await response.text();
+  console.log(txt);
+  throw new Error('Login failed');
+}
+
+    const data = await response.json();
+    console.log("LOGIN RESPONSE"); // 29-07-2026
+    console.log(data); // 29-07-2026
+    setAuthToken(data.token);
+    setAuth(data.user);
+    loginError.textContent = "";
+    settingsAuthorized = false;
+    await renderApp();
+    showApp();
+  } catch (error) {
+    loginError.textContent = "Usuário ou senha inválidos.";
+    loginPassword.value = "";
+    loginPassword.focus();
+  }
+});
+
+loginUsername.addEventListener("input", () => { loginError.textContent = ""; });
+loginPassword.addEventListener("input", () => { loginError.textContent = ""; });
+loginPassword.addEventListener("keydown", e => { if (e.key === "Enter") loginButton.click(); });
+
+logoutButton.addEventListener("click", () => { clearAuth(); settingsAuthorized = false; showLogin(); });
+
+newCarButton.addEventListener("click", () => openModal());
+closeModal.addEventListener("click",   closeModalWindow);
+cancelModal.addEventListener("click",  closeModalWindow);
+filterText.addEventListener("input",   renderCarsTable);
+filterStatus.addEventListener("change", renderCarsTable);
+
+// Eventos de Usuários
+newUserButton.addEventListener("click", () => openUserModal());
+closeUserModal.addEventListener("click", closeUserModalWindow);
+cancelUserModal.addEventListener("click", closeUserModalWindow);
+
+userForm.addEventListener("submit", async e => {
+  e.preventDefault();
+  userFormError.textContent = "";
+
+  const userData = {
+    username: userName.value.trim(),
+    email: userEmail.value.trim() || null,
+    role: userRole.value,
+    status: userStatus.value
+  };
+
+  if (!userData.username) {
+    userFormError.textContent = "Nome de usuário é obrigatório";
+    return;
+  }
+
+  if (!editingUserId && !userPassword.value) {
+    userFormError.textContent = "Senha é obrigatória para novo usuário";
+    return;
+  }
+
+  try {
+    if (editingUserId) {
+      // Atualizar usuário existente
+      await updateUser(editingUserId, userData);
+      
+      // Atualizar senha se fornecida
+      if (userPassword.value.trim()) {
+        await updateUserPassword(editingUserId, userPassword.value.trim());
+      }
+      
+      showAppMessage(`Usuário atualizado com sucesso.`, "info");
+    } else {
+      // Criar novo usuário
+      userData.password = userPassword.value.trim();
+      await createUser(userData);
+      showAppMessage(`Usuário criado com sucesso.`, "info");
+    }
+
+    await loadUsers();
+    await loadPermissions();
+    renderUsersTable();
+    populatePermissionUserSelect();
+    closeUserModalWindow();
+  } catch (error) {
+    console.error('Error saving user:', error);
+    userFormError.textContent = error.message || 'Erro ao salvar usuário';
+  }
+});
+
+// Abas de Configurações
+settingsTabBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const tabName = btn.dataset.settingsTab;
+    switchSettingsTab(tabName);
+    if (tabName === "permissions") {
+      populatePermissionUserSelect();
+      renderPermissionsGrid(null);
+    }
+  });
+});
+
+// Seletor de usuário para permissões
+permissionUserSelect.addEventListener("change", async (e) => {
+  const userId = e.target.value;
+  if (userId) {
+    await renderPermissionsGrid(userId);
+  } else {
+    permissionsGridContainer.style.display = "none";
+  }
+});
+
+settingsAuthForm.addEventListener("submit", e => {
+  e.preventDefault();
+  if (currentUser.role !== "admin") { settingsError.textContent = "Acesso negado: somente administrador pode abrir configurações."; return; }
+  if (settingsPasswordInput.value.trim() !== settingsPassword) { settingsError.textContent = "Senha incorreta."; return; }
+  settingsAuthorized = true;
+  closeSettingsAuthModal();
+  setActiveTab("settings");
+  renderSettingsPanel();
+});
+
+closeSettingsAuth.addEventListener("click",  closeSettingsAuthModal);
+cancelSettingsAuth.addEventListener("click", closeSettingsAuthModal);
+
+tabButtons.forEach(button => {
+  button.addEventListener("click", () => {
+    const tab = button.dataset.tab;
+    if (tab === "settings") {
+      if (currentUser.role !== "admin") { showAppMessage("Acesso negado: somente administrador pode ver esta área.", "danger"); return; }
+      if (!settingsAuthorized) { openSettingsAuth(); return; }
+      renderSettingsPanel();
+    }
+    if (tab !== "settings") clearAppMessage();
+    setActiveTab(tab);
+  });
+});
+
+carForm.addEventListener("submit", async e => {
+  e.preventDefault();
+  const carData = {
+    name: carName.value.trim(),
+    model: carModel.value.trim(),
+    plate: carPlate.value.trim().toUpperCase(),
+    chassis: carChassis.value.trim(),
+    arrivalDate: carArrival.value,
+    scheduledDeparture: carScheduledDeparture.value || null
+  };
+
+  if (!carData.name || !carData.model || !carData.plate) {
+    alert("Preencha nome, modelo e placa.");
+    return;
+  }
+
+  try {
+    if (editingId) {
+      await updateCarData(editingId, carData);
+    } else {
+      await createCar(carData);
+    }
+    await loadCars();
+    renderCarsTable();
+    updateDashboard();
+    closeModalWindow();
+  } catch (error) {
+    console.error('Error saving car:', error);
+    alert(error.message || 'Erro ao salvar veículo');
+  }
+});
+
+// Agenda
+newEventButton.addEventListener("click", () => openEventModal());
+calPrev.addEventListener("click", () => { calCurrentDate.setMonth(calCurrentDate.getMonth()-1); renderCalendar(); });
+calNext.addEventListener("click", () => { calCurrentDate.setMonth(calCurrentDate.getMonth()+1); renderCalendar(); });
+calToday.addEventListener("click", () => { calCurrentDate = new Date(); renderCalendar(); });
+closeEventModal.addEventListener("click",  closeEventModalFn);
+cancelEventModal.addEventListener("click", closeEventModalFn);
+closeDayModal.addEventListener("click",    closeDayModalFn);
+closeDayModalBtn.addEventListener("click", closeDayModalFn);
+addEventFromDay.addEventListener("click",  () => { closeDayModalFn(); openEventModal(null, dayModalDate); });
+
+eventForm.addEventListener("submit", async e => {
+  e.preventDefault();
+  const evData = {
+    type: eventType.value,
+    title: eventTitle.value.trim() || null,
+    date: eventDate.value,
+    time: eventTime.value,
+    carId: eventCar.value || null,
+    vendor: eventVendor.value.trim(),
+    client: eventClient.value.trim() || null,
+    note: eventNote.value.trim() || null
+  };
+
+  if (!evData.date || !evData.time || !evData.vendor) {
+    alert("Preencha data, horário e vendedor.");
+    return;
+  }
+
+  try {
+    if (editingEventId) {
+      await updateEventData(editingEventId, evData);
+    } else {
+      await createEvent(evData);
+    }
+    await loadEvents();
+    closeEventModalFn();
+    renderCalendar();
+  } catch (error) {
+    console.error('Error saving event:', error);
+    alert(error.message || 'Erro ao salvar evento');
+  }
+});
+
+window.addEventListener("click", e => {
+  if (e.target === carModal)          closeModalWindow();
+  if (e.target === settingsAuthModal) closeSettingsAuthModal();
+  if (e.target === eventModal)        closeEventModalFn();
+  if (e.target === dayModal)          closeDayModalFn();
+  if (e.target === notificationModal) notificationModal.classList.add("hidden");
+  if (e.target === upcomingModal)     upcomingModal.classList.add("hidden");
+});
+
+/* NOVOS EVENT LISTENERS */
+notificationBell.addEventListener("click", showNotificationModal);
+upcomingExitsButton.addEventListener("click", showUpcomingModal);
+closeNotificationModal.addEventListener("click", () => notificationModal.classList.add("hidden"));
+closeUpcomingModal.addEventListener("click", () => upcomingModal.classList.add("hidden"));
+
+/* ==========================================================
+   START
+   ========================================================== */
+async function init() {
+  loadAuth();
+  if (currentUser && authToken) {
+    await renderApp();
+    showApp();
+  } else {
+    showLogin();
+  }
+}
+
+init();

@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>VW · Gerenciador de Frota</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- ===== LOGIN ===== -->
+  <div class="login-screen" id="loginScreen">
+    <div class="login-bg-art"></div>
+
+    <div class="login-left">
+      <div class="login-vw-mark">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+          <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+          <path d="M50 18 L72 62 L62 62 L50 36 L38 62 L28 62 Z" fill="white" opacity="0.9"/>
+          <path d="M32 56 L50 80 L68 56 L60 56 L50 72 L40 56 Z" fill="white" opacity="0.9"/>
+        </svg>
+      </div>
+      <h1 class="login-headline">
+        Gerenciador<br>de Frota
+        <em>Volkswagen</em>
+      </h1>
+      <div class="login-divider"></div>
+      <p class="login-desc">Controle completo do estoque e movimentação de veículos. Rastreie chegadas, saídas e indicadores em tempo real.</p>
+      <div class="login-car-line">
+        <span>Volkswagen Group · Sistema Interno</span>
+      </div>
+    </div>
+
+    <div class="login-right">
+      <div class="login-card">
+        <div class="login-card-header">
+          <h2>Acesso ao sistema</h2>
+          <p>Insira suas credenciais para continuar</p>
+        </div>
+
+        <div class="field-group">
+          <label>Usuário</label>
+          <input type="text" id="loginUsername" placeholder="Digite seu usuário" autocomplete="username" />
+        </div>
+
+        <div class="field-group">
+          <label>Senha</label>
+          <input type="password" id="loginPassword" placeholder="Digite sua senha" autocomplete="current-password" />
+        </div>
+
+        <button class="login-btn" id="loginButton">Entrar →</button>
+
+        <p class="hint">Credenciais: admin/admin123 · vendedor/venda123 · DEV/352155++</p>
+        <p class="login-error" id="loginError"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== APP ===== -->
+  <div class="app-shell hidden" id="appShell">
+
+    <header>
+      <div class="brand-row">
+        <div class="brand-logo">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+            <path d="M50 18 L72 62 L62 62 L50 36 L38 62 L28 62 Z" fill="white"/>
+            <path d="M32 56 L50 80 L68 56 L60 56 L50 72 L40 56 Z" fill="white"/>
+          </svg>
+        </div>
+        <div class="brand-notification">
+          <button id="notificationBell" class="notification-bell">
+            🔔
+            <span id="notificationBadge" class="notification-badge hidden"></span>
+          </button>
+        </div>
+        <div class="brand-divider"></div>
+        <div class="brand-text">
+          <h1>Gerenciador de Frota</h1>
+          <p id="welcomeText">Painel de gestão</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span id="userRoleBadge"></span>
+        <button id="logoutButton">Sair</button>
+      </div>
+    </header>
+
+    <nav class="nav-bar">
+      <button class="tab-button active" data-tab="consulta">Consulta</button>
+      <button class="tab-button" data-tab="agenda">Agenda</button>
+      <button class="tab-button" data-tab="dashboard">Dashboard</button>
+      <button class="tab-button" data-tab="settings">Configurações</button>
+    </nav>
+
+    <div class="app-message hidden" id="appMessage"></div>
+
+    <main>
+
+      <!-- CONSULTA -->
+      <section class="panel" id="inventoryPanel">
+        <div class="panel-header">
+          <div>
+            <h2>Consulta de Veículos</h2>
+            <p>Busque veículos e registre novas chegadas</p>
+          </div>
+          <button id="newCarButton">Registrar Chegada</button>
+        </div>
+        <div class="filters">
+          <input type="text" id="filterText" placeholder="🔍  Buscar por nome, modelo ou placa…" />
+          <select id="filterStatus">
+            <option value="all">Todos os veículos</option>
+            <option value="in">Em estoque</option>
+            <option value="out">Saídas confirmadas</option>
+          </select>
+        </div>
+        <div class="table-wrapper">
+          <table class="responsive-table">
+            <thead>
+              <tr>
+                <th>Veículo</th>
+                <th>Modelo</th>
+                <th>Placa</th>
+                <th>Chassi</th>
+                <th>Chegada</th>
+                <th>Saída prevista</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="carsTableBody"></tbody>
+          </table>
+        </div>
+        <div class="cars-cards" id="carsCards"></div>
+      </section>
+
+      <!-- DASHBOARD -->
+      <section class="panel hidden" id="dashboardPanel">
+        <div class="panel-header">
+          <div>
+            <h2>Dashboard</h2>
+            <p>Visão geral da frota e indicadores de desempenho</p>
+          </div>
+        </div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total de veículos</div>
+            <div class="stat-value" id="totalCars">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Em estoque</div>
+            <div class="stat-value" id="inStockCars">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Saídas confirmadas</div>
+            <div class="stat-value" id="outCars">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Saídas previstas</div>
+            <div class="stat-value" id="scheduledExitsCount">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Modelos diferentes</div>
+            <div class="stat-value" id="modelsCount">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Estadia média (dias)</div>
+            <div class="stat-value" id="avgStockDays">0</div>
+          </div>
+        </div>
+        <div class="charts">
+          <div class="chart-card">
+            <h3>Modelos mais comuns</h3>
+            <canvas id="modelsChart"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3>Saídas por mês</h3>
+            <canvas id="exitsChart"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3>Status da frota</h3>
+            <canvas id="statusChart"></canvas>
+          </div>
+          <div class="chart-card">
+            <h3>Entradas por mês</h3>
+            <canvas id="arrivalsChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- AGENDA -->
+      <section class="panel hidden" id="agendaPanel">
+        <div class="panel-header">
+          <div>
+            <h2>Agenda de Veículos</h2>
+            <p>Marque eventos e vincule carros a datas de saída</p>
+          </div>
+          <button class="btn-primary" id="newEventButton">+ Novo Evento</button>
+        </div>
+
+        <!-- Controles do calendário -->
+        <div class="agenda-toolbar">
+          <div class="agenda-nav">
+            <button class="cal-nav-btn" id="calPrev">&#8249;</button>
+            <h3 class="cal-month-label" id="calMonthLabel"></h3>
+            <button class="cal-nav-btn" id="calNext">&#8250;</button>
+          </div>
+          <button class="cal-today-btn" id="calToday">Hoje</button>
+        </div>
+
+        <!-- Grade do calendário -->
+        <div class="calendar-wrap">
+          <div class="cal-grid-header">
+            <span>Dom</span><span>Seg</span><span>Ter</span>
+            <span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+        </div>
+
+        <!-- Lista de eventos do mês -->
+        <div class="agenda-events-list" id="agendaEventsList"></div>
+      </section>
+
+      <!-- CONFIGURAÇÕES -->
+      <section class="panel hidden" id="settingsPanel">
+        <div class="panel-header">
+          <div>
+            <h2>Configurações</h2>
+            <p>Gerenciamento de usuários e permissões</p>
+          </div>
+        </div>
+
+        <!-- Abas de Configurações -->
+        <div class="settings-tabs">
+          <button class="settings-tab-btn active" data-settings-tab="users">Usuários</button>
+          <button class="settings-tab-btn" data-settings-tab="permissions">Permissões</button>
+        </div>
+
+        <!-- TAB: Gerenciar Usuários -->
+        <div class="settings-tab-content active" id="usersTab">
+          <div class="settings-toolbar">
+            <button class="btn-primary" id="newUserButton">+ Novo Usuário</button>
+          </div>
+          <div class="table-wrapper">
+            <table class="settings-table">
+              <thead>
+                <tr>
+                  <th>Usuário</th>
+                  <th>Email</th>
+                  <th>Função</th>
+                  <th>Status</th>
+                  <th style="width:120px;">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB: Gerenciar Permissões -->
+        <div class="settings-tab-content" id="permissionsTab">
+          <div class="permissions-wrapper">
+            <div class="permissions-select">
+              <label>Selecione um usuário:</label>
+              <select id="permissionUserSelect" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-size:0.9rem;margin-bottom:20px;">
+                <option value="">— Escolha um usuário —</option>
+              </select>
+            </div>
+            <div id="permissionsGridContainer" style="display:none;">
+              <div class="permissions-grid" id="permissionsGrid"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Botão flutuante para próximos saídas -->
+    <button id="upcomingExitsButton" class="floating-button">
+      📅
+    </button>
+  </div>
+
+  <!-- MODAL: VEÍCULO -->
+  <div class="modal hidden" id="carModal">
+    <div class="modal-content">
+      <div class="modal-top">
+        <h2 id="modalTitle">Registrar chegada</h2>
+        <button class="close-modal" id="closeModal">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="carForm">
+          <div class="modal-grid">
+            <div>
+              <label>Nome do veículo</label>
+              <input type="text" id="carName" required placeholder="Ex: Volkswagen Polo" />
+            </div>
+            <div>
+              <label>Modelo</label>
+              <input type="text" id="carModel" required placeholder="Ex: Polo" />
+            </div>
+            <div>
+              <label>Placa</label>
+              <input type="text" id="carPlate" required placeholder="ABC-1234" />
+            </div>
+            <div>
+              <label>Chassi</label>
+              <input type="text" id="carChassis" required placeholder="9BWZZZ..." />
+            </div>
+            <div>
+              <label>Data e hora de chegada</label>
+              <input type="datetime-local" id="carArrival" required />
+            </div>
+            <div>
+              <label>Saída prevista (opcional)</label>
+              <input type="datetime-local" id="carScheduledDeparture" />
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="secondary" id="cancelModal">Cancelar</button>
+            <button type="submit" id="saveCarButton">Salvar veículo</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: AUTH SETTINGS -->
+  <div class="modal hidden" id="settingsAuthModal">
+    <div class="modal-content">
+      <div class="modal-top">
+        <h2>Acesso restrito</h2>
+        <button class="close-modal" id="closeSettingsAuth">×</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:18px;">
+          Somente o usuário DEV pode acessar esta área. Digite a senha abaixo para continuar.
+        </p>
+        <form id="settingsAuthForm">
+          <label>Senha DEV</label>
+          <input type="password" id="settingsPassword" required placeholder="••••••••" />
+          <p class="login-error" id="settingsError"></p>
+          <div class="modal-actions">
+            <button type="button" class="secondary" id="cancelSettingsAuth">Cancelar</button>
+            <button type="submit">Confirmar acesso</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Novo/Editar Usuário -->
+  <div class="modal hidden" id="userModal">
+    <div class="modal-content">
+      <div class="modal-top">
+        <h2 id="userModalTitle">Novo Usuário</h2>
+        <button class="close-modal" id="closeUserModal">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="userForm">
+          <div class="modal-grid">
+            <div>
+              <label>Nome de usuário *</label>
+              <input type="text" id="userName" required placeholder="Digite o nome de usuário" />
+            </div>
+            <div>
+              <label>Email</label>
+              <input type="email" id="userEmail" placeholder="Digite o email" />
+            </div>
+            <div>
+              <label>Senha *</label>
+              <input type="password" id="userPassword" required placeholder="Digite uma senha" />
+            </div>
+            <div>
+              <label>Função</label>
+              <select id="userRole" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-size:0.9rem;margin-bottom:14px;">
+                <option value="user">Usuário</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+            <div>
+              <label>Status</label>
+              <select id="userStatus" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-size:0.9rem;margin-bottom:14px;">
+                <option value="active">Ativo</option>
+                <option value="inactive">Inativo</option>
+              </select>
+            </div>
+          </div>
+          <p style="color:var(--text-muted);font-size:0.875rem;margin:14px 0;">* Campos obrigatórios</p>
+          <p class="login-error" id="userFormError"></p>
+          <div class="modal-actions">
+            <button type="button" class="secondary" id="cancelUserModal">Cancelar</button>
+            <button type="submit" id="saveUserButton">Salvar usuário</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EVENTO DA AGENDA -->
+  <div class="modal hidden" id="eventModal">
+    <div class="modal-content modal-content--wide">
+      <div class="modal-top">
+        <h2 id="eventModalTitle">Novo Evento</h2>
+        <button class="close-modal" id="closeEventModal">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="eventForm">
+          <div class="modal-grid">
+            <div style="grid-column: 1 / -1">
+              <label>Título do evento (opcional)</label>
+              <input type="text" id="eventTitle" placeholder="Ex: Entrega ao cliente, Revisão, Transferência…" />
+            </div>
+            <div>
+              <label>Data</label>
+              <input type="date" id="eventDate" required />
+            </div>
+            <div>
+              <label>Horário</label>
+              <input type="time" id="eventTime" required />
+            </div>
+            <div>
+              <label>Tipo</label>
+              <select id="eventType" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-size:0.9rem;margin-bottom:14px;">
+                <option value="saida">🚗 Saída</option>
+                <option value="entrega">🤝 Entrega</option>
+              </select>
+            </div>
+            <div>
+              <label>Vendedor</label>
+              <select id="eventVendor" required style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-size:0.9rem;margin-bottom:14px;">
+                <option value="">— Selecione o vendedor —</option>
+                <option value="jadson">Jadson</option>
+                <option value="vilmara">Vilmara</option>
+                <option value="thamires">Thamires</option>
+                <option value="iorrana">Iorrana</option>
+                <option value="ana flavia">Ana Flavia</option>
+                <option value="patricia">Patricia</option>
+                <option value="marcelo">Marcelo</option>
+              </select>
+            </div>
+            <div>
+              <label>Cliente</label>
+              <input type="text" id="eventClient" placeholder="Nome do cliente" />
+            </div>
+            <div style="grid-column: 1 / -1">
+              <label>Veículo vinculado (opcional)</label>
+              <select id="eventCar" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-size:0.9rem;margin-bottom:14px;">
+                <option value="">— Nenhum veículo —</option>
+              </select>
+            </div>
+            <div style="grid-column: 1 / -1">
+              <label>Observação (opcional)</label>
+              <input type="text" id="eventNote" placeholder="Detalhes adicionais do evento…" />
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="secondary" id="cancelEventModal">Cancelar</button>
+            <button type="submit" id="saveEventButton">Salvar evento</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DETALHE DO DIA -->
+  <div class="modal hidden" id="dayModal">
+    <div class="modal-content">
+      <div class="modal-top">
+        <h2 id="dayModalTitle">Eventos do dia</h2>
+        <button class="close-modal" id="closeDayModal">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="dayModalBody"></div>
+        <div class="modal-actions" style="margin-top:16px;">
+          <button type="button" class="secondary" id="addEventFromDay">+ Adicionar evento neste dia</button>
+          <button type="button" class="secondary" id="closeDayModalBtn">Fechar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NOTIFICAÇÕES -->
+  <div class="modal hidden" id="notificationModal">
+    <div class="modal-content">
+      <div class="modal-top">
+        <h2>Notificações de Saídas</h2>
+        <button class="close-modal" id="closeNotificationModal">&times;</button>
+      </div>
+      <div class="modal-body" id="notificationModalBody">
+        <!-- Conteúdo dinâmico -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PRÓXIMAS SAÍDAS -->
+  <div class="modal hidden" id="upcomingModal">
+    <div class="modal-content">
+      <div class="modal-top">
+        <h2>Saídas nos Próximos 7 Dias</h2>
+        <button class="close-modal" id="closeUpcomingModal">&times;</button>
+      </div>
+      <div class="modal-body" id="upcomingModalBody">
+        <!-- Conteúdo dinâmico -->
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
