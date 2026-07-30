@@ -804,7 +804,7 @@ async function checkScheduledDepartures() {
   const updates = [];
 
   for (const car of cars) {
-    if (car.scheduledDeparture && !car.departureDate) {
+    if (car.scheduledDeparture && inStock) {
       const scheduled = new Date(car.scheduledDeparture);
       if (!isNaN(scheduled) && scheduled <= now) {
         car.departureDate = car.scheduledDeparture;
@@ -843,9 +843,13 @@ function renderCarsTable() {
   }
 
   filtered.forEach(car => {
-    const inStock = car.departureDate === "";
+    const hasExited =
+    car.departureDate &&
+    car.departureDate.trim() !== "";
+
+const inStock = !hasExited;
     const row = document.createElement("tr");
-    row.classList.toggle("scheduled-row", !!(car.scheduledDeparture && !car.departureDate));
+    row.classList.toggle("scheduled-row", !!(car.scheduledDeparture && inStock));
 
     row.innerHTML = `
       <td data-label="Veículo"><strong>${car.name}</strong></td>
@@ -894,7 +898,7 @@ function renderCarsTable() {
     // Render card for mobile
     const card = document.createElement("div");
     card.className = "car-card";
-    card.classList.toggle("scheduled-row", !!(car.scheduledDeparture && !car.departureDate));
+    card.classList.toggle("scheduled-row", !!(car.scheduledDeparture && inStock));
 
     card.innerHTML = `
       <div class="car-card-header">
@@ -918,7 +922,7 @@ function renderCarsTable() {
         <strong>Chegada:</strong> <span>${formatDateTime(car.arrivalDate)}</span>
       </div>
       <div class="car-card-detail">
-        <strong>Saída prevista:</strong> <span>${car.scheduledDeparture ? formatDateTime(car.scheduledDeparture) + (!car.departureDate ? " (Agendado)" : "") : "—"}</span>
+        <strong>Saída prevista:</strong> <span>${car.scheduledDeparture ? formatDateTime(car.scheduledDeparture) + (inStock ? " (Agendado)" : "") : "—"}</span>
       </div>
       <div class="car-card-actions"></div>
     `;
@@ -1072,6 +1076,7 @@ async function renderApp() {
   updatePermissionUI();
   await loadCars();
   await loadEvents();
+
   
   // Carregar usuários e permissões se for admin
   if (currentUser.role === 'admin') {
@@ -1081,6 +1086,7 @@ async function renderApp() {
   }
   
   renderCarsTable();
+  renderCalendar();
   updateDashboard();
   updateNotifications();
   clearAppMessage();
@@ -1533,6 +1539,7 @@ tabButtons.forEach(button => {
 
 carForm.addEventListener("submit", async e => {
   e.preventDefault();
+
   const carData = {
     name: carName.value.trim(),
     model: carModel.value.trim(),
@@ -1540,7 +1547,6 @@ carForm.addEventListener("submit", async e => {
     chassis: carChassis.value.trim(),
     arrivalDate: carArrival.value,
     scheduledDeparture: carScheduledDeparture.value || null
-
   };
 
   if (!carData.name || !carData.model || !carData.plate) {
@@ -1549,18 +1555,20 @@ carForm.addEventListener("submit", async e => {
   }
 
   try {
+
     if (editingId) {
       await updateCarData(editingId, carData);
     } else {
       await createCar(carData);
     }
-    await loadCars();
-    renderCarsTable();
-    updateDashboard();
+
+    await renderApp();
+
     closeModalWindow();
+
   } catch (error) {
-    console.error('Error saving car:', error);
-    alert(error.message || 'Erro ao salvar veículo');
+    console.error("Error saving car:", error);
+    alert(error.message || "Erro ao salvar veículo");
   }
 });
 
