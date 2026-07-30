@@ -6,7 +6,7 @@ const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const path = require('path');
-const pool = require('./database');
+const pool = require('./config/database');
 
 console.log('DB_HOST:', process.env.DB_HOST);
 
