@@ -137,6 +137,7 @@ let editingUserId      = null;
 let calCurrentDate     = new Date();
 let dayModalDate       = null;
 let eventDateFixed     = false;
+let activeTabName      = "consulta";
 let modelsChart        = null;
 let exitsChart         = null;
 let statusChart        = null;
@@ -627,6 +628,7 @@ function updatePermissionUI() {
 }
 
 function setActiveTab(tabName) {
+  activeTabName = tabName;
   inventoryPanel.classList.toggle("hidden", tabName !== "consulta");
   dashboardPanel.classList.toggle("hidden", tabName !== "dashboard");
   agendaPanel.classList.toggle("hidden",    tabName !== "agenda");
@@ -647,42 +649,32 @@ function formatDateTime(str) {
 /* ==========================================================
    NOTIFICAÇÕES
    ========================================================== */
-function getUpcomingExits(daysAhead = 7) {
-  const now = new Date();
-  const future = new Date();
-  future.setDate(now.getDate() + daysAhead);
-  return events.filter(ev => ev.type === "saida" && ev.date).filter(ev => {
-    const dt = getEventDateTime(ev);
-    return dt >= now && dt <= future;
-  }).sort((a, b) => getEventDateTime(a) - getEventDateTime(b));
-}
-
-function getImmediateExits() {
-
+function getScheduledExitWindow(daysAhead = 7) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  const future = new Date(today);
+  future.setDate(today.getDate() + daysAhead);
+
   return cars
     .filter(car => {
-
-      // Não possui saída programada
       if (!car.scheduledDeparture) return false;
-
-      // Já saiu do estoque
       if (car.departureDate) return false;
 
       const exit = new Date(car.scheduledDeparture);
       exit.setHours(0, 0, 0, 0);
 
-      const diff = (exit - today) / 86400000;
-
-      return diff >= 0 && diff <= 1;
-
+      return exit >= today && exit <= future;
     })
-    .sort((a, b) =>
-      new Date(a.scheduledDeparture) - new Date(b.scheduledDeparture)
-    );
+    .sort((a, b) => new Date(a.scheduledDeparture) - new Date(b.scheduledDeparture));
+}
 
+function getImmediateExits() {
+  return getScheduledExitWindow(1);
+}
+
+function getUpcomingExits(daysAhead = 7) {
+  return getScheduledExitWindow(daysAhead);
 }
 
 function updateNotifications() {
@@ -697,21 +689,16 @@ function showNotificationModal() {
     notificationModalBody.innerHTML = "<p>Nenhuma saída programada para hoje ou amanhã.</p>";
   } else {
     immediate.forEach(car => {
-
-  const item = document.createElement("div");
-  item.className = "notification-item";
-
-  item.innerHTML = `
-    <strong>${car.name}</strong><br>
-    Modelo: ${car.model}<br>
-    Placa: ${car.plate}<br>
-    Saída prevista:
-    ${formatDateTime(car.scheduledDeparture)}
-  `;
-
-  notificationModalBody.appendChild(item);
-
-});
+      const item = document.createElement("div");
+      item.className = "notification-item";
+      item.innerHTML = `
+        <strong>${car.name}</strong><br>
+        Modelo: ${car.model}<br>
+        Placa: ${car.plate}<br>
+        Saída prevista: ${formatDateTime(car.scheduledDeparture)}
+      `;
+      notificationModalBody.appendChild(item);
+    });
   }
   notificationModal.classList.remove("hidden");
 }
@@ -722,15 +709,14 @@ function showUpcomingModal() {
   if (upcoming.length === 0) {
     upcomingModalBody.innerHTML = "<p>Nenhuma saída programada nos próximos 7 dias.</p>";
   } else {
-    upcoming.forEach(ev => {
-      const car = ev.carId ? cars.find(c => c.id === ev.carId) : null;
+    upcoming.forEach(car => {
       const item = document.createElement("div");
       item.className = "notification-item";
       item.innerHTML = `
-        <strong>${car ? car.name : (ev.title || 'Saída')}</strong><br>
-        ${car ? `Placa: ${car.plate}<br>` : ""}
-        ${ev.vendor ? `Vendedor: ${ev.vendor}<br>` : ""}
-        Saída: ${ev.date} ${ev.time || "00:00"}
+        <strong>${car.name}</strong><br>
+        Modelo: ${car.model}<br>
+        Placa: ${car.plate}<br>
+        Saída prevista: ${formatDateTime(car.scheduledDeparture)}
       `;
       upcomingModalBody.appendChild(item);
     });
@@ -979,9 +965,7 @@ async function removeCar(id) {
   if (!confirm("Deseja realmente excluir este veículo?")) return;
   try {
     await deleteCarData(id);
-    await loadCars();
-    renderCarsTable();
-    updateDashboard();
+    await refreshAppData();
   } catch (error) {
     console.error('Error deleting car:', error);
     alert('Erro ao excluir veículo');
@@ -1017,9 +1001,7 @@ async function markAsExited(id) {
       departureDate: new Date().toISOString().slice(0, 16)
     });
 
-    await loadCars();
-    renderCarsTable();
-    updateDashboard();
+    await refreshAppData();
 
   } catch (error) {
 
@@ -1102,31 +1084,40 @@ function renderDashboard() {
 
 function updateDashboard() { renderDashboard(); }
 
+async function refreshAppData() {
+  if (!currentUser) return;
+
+  welcomeText.textContent   = `Olá, ${currentUser.role}`;
+  userRoleBadge.textContent = currentUser.role;
+  updatePermissionUI();
+
+  await Promise.all([loadCars(), loadEvents()]);
+
+  if (currentUser.role === 'admin') {
+    await Promise.all([loadUsers(), loadPermissions()]);
+  }
+
+  renderCarsTable();
+  renderCalendar();
+  updateDashboard();
+  updateNotifications();
+
+  if (currentUser.role === 'admin') {
+    renderUsersTable();
+    populatePermissionUserSelect();
+  }
+
+  clearAppMessage();
+  setActiveTab(activeTabName);
+}
+
 /* ==========================================================
    APP INIT / AUTH
    ========================================================== */
 async function renderApp() {
   console.log("renderApp()"); // 29-07-2026
   console.log(currentUser); // 29-07-2026
-  welcomeText.textContent   = `Olá, ${currentUser.role}`;
-  userRoleBadge.textContent = currentUser.role;
-  updatePermissionUI();
-  await loadCars();
-  await loadEvents();
-
-  
-  // Carregar usuários e permissões se for admin
-  if (currentUser.role === 'admin') {
-    await loadUsers();
-    await loadPermissions();
-    renderUsersTable();
-  }
-  
-  renderCarsTable();
-  renderCalendar();
-  updateDashboard();
-  updateNotifications();
-  clearAppMessage();
+  await refreshAppData();
   setActiveTab("consulta");
 }
 
@@ -1417,8 +1408,7 @@ async function deleteEvent(id) {
   if (!confirm("Excluir este evento?")) return;
   try {
     await deleteEventData(id);
-    await loadEvents();
-    renderCalendar();
+    await refreshAppData();
   } catch (error) {
     console.error('Error deleting event:', error);
     alert('Erro ao excluir evento');
@@ -1517,10 +1507,7 @@ userForm.addEventListener("submit", async e => {
       showAppMessage(`Usuário criado com sucesso.`, "info");
     }
 
-    await loadUsers();
-    await loadPermissions();
-    renderUsersTable();
-    populatePermissionUserSelect();
+    await refreshAppData();
     closeUserModalWindow();
   } catch (error) {
     console.error('Error saving user:', error);
@@ -1599,8 +1586,7 @@ carForm.addEventListener("submit", async e => {
       await createCar(carData);
     }
 
-    await renderApp();
-
+    await refreshAppData();
     closeModalWindow();
 
   } catch (error) {
@@ -1644,9 +1630,8 @@ eventForm.addEventListener("submit", async e => {
     } else {
       await createEvent(evData);
     }
-    await loadEvents();
+    await refreshAppData();
     closeEventModalFn();
-    renderCalendar();
   } catch (error) {
     console.error('Error saving event:', error);
     alert(error.message || 'Erro ao salvar evento');
