@@ -789,14 +789,59 @@ td {
 
 /* ===== PERMISSIONS GRID ===== */
 .permissions-wrapper {
-  background: var(--surface);
-  border-radius: var(--radius);
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.permissions-card {
+  background: linear-gradient(135deg, rgba(0, 30, 80, 0.04), rgba(1, 84, 180, 0.06));
   border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 20px;
+}
+
+.permissions-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.permissions-card-eyebrow {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--vw-blue);
+  margin-bottom: 6px;
+}
+
+.permissions-card h3 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.permissions-card p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.permissions-card-badge {
+  background: var(--vw-blue);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .permissions-select {
-  margin-bottom: 20px;
+  margin-bottom: 4px;
 }
 
 .permissions-select label {
@@ -806,41 +851,52 @@ td {
   color: var(--text);
 }
 
+.permissions-select select {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
 .permissions-grid {
   display: grid;
-  gap: 24px;
+  gap: 16px;
 }
 
 .permissions-category {
-  background: var(--surface2);
+  background: var(--surface);
   padding: 16px;
-  border-radius: var(--radius);
+  border-radius: 14px;
   border: 1px solid var(--border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .permissions-category h4 {
-  margin-bottom: 12px;
+  margin: 0 0 12px;
   color: var(--vw-blue);
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
-.permissions-category label {
+.permission-option {
   display: flex !important;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
+  padding: 10px;
+  border-radius: 10px;
   transition: background 0.2s ease;
 }
 
-.permissions-category label:hover {
+.permission-option:hover {
   background: rgba(0, 30, 80, 0.05);
 }
 
-.permissions-category input[type="checkbox"] {
+.permission-option input[type="checkbox"] {
   width: 18px;
   height: 18px;
   min-width: 18px;
@@ -849,9 +905,16 @@ td {
   cursor: pointer;
 }
 
-.permissions-category span small {
+.permission-text strong {
   display: block;
-  margin-top: 2px;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.permission-description {
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  line-height: 1.4;
 }
 
 /* =====================================================
@@ -1296,6 +1359,61 @@ td {
 
 /* Modal mais largo para o evento */
 .modal-content--wide { width: min(620px, 100%); }
+
+.exit-cars-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.exit-car-card {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.exit-car-card:hover {
+  border-color: var(--vw-blue-light);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.exit-car-card__title {
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--vw-blue);
+}
+
+.exit-car-card__meta {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.exit-selected-card {
+  padding: 14px;
+  border-radius: var(--radius);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+
+.exit-selected-card__title {
+  font-weight: 700;
+  color: var(--vw-blue);
+  margin-bottom: 6px;
+}
+
+.exit-selected-card__meta {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
 
 /* Detalhe do dia no modal */
 .day-event-item {

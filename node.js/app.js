@@ -95,6 +95,22 @@ const eventModal        = document.getElementById("eventModal");
 const closeEventModal   = document.getElementById("closeEventModal");
 const cancelEventModal  = document.getElementById("cancelEventModal");
 const eventForm         = document.getElementById("eventForm");
+const exitModal         = document.getElementById("exitModal");
+const closeExitModal    = document.getElementById("closeExitModal");
+const cancelExitModal   = document.getElementById("cancelExitModal");
+const backExitSelection = document.getElementById("backExitSelection");
+const exitForm          = document.getElementById("exitForm");
+const exitCarsGrid      = document.getElementById("exitCarsGrid");
+const exitStepSelection = document.getElementById("exitStepSelection");
+const exitStepForm      = document.getElementById("exitStepForm");
+const exitSelectedCard  = document.getElementById("exitSelectedCard");
+const exitDate          = document.getElementById("exitDate");
+const exitTime          = document.getElementById("exitTime");
+const exitVendor        = document.getElementById("exitVendor");
+const exitClient        = document.getElementById("exitClient");
+const exitNote          = document.getElementById("exitNote");
+const exitModalTitle    = document.getElementById("exitModalTitle");
+const exitModalSubtitle = document.getElementById("exitModalSubtitle");
 const eventTitle        = document.getElementById("eventTitle");
 const eventDate         = document.getElementById("eventDate");
 const eventTime         = document.getElementById("eventTime");
@@ -138,6 +154,7 @@ let calCurrentDate     = new Date();
 let dayModalDate       = null;
 let eventDateFixed     = false;
 let activeTabName      = "consulta";
+let selectedExitCarId  = null;
 let modelsChart        = null;
 let exitsChart         = null;
 let statusChart        = null;
@@ -514,6 +531,20 @@ async function removeUser(userId, username) {
   }
 }
 
+function getPermissionLabel(permissionName) {
+  const labels = {
+    view: "Visualizar",
+    add: "Adicionar",
+    edit: "Editar",
+    delete: "Excluir",
+    dashboard: "Dashboard",
+    settings: "Configurações",
+    create_users: "Criar novos usuários"
+  };
+
+  return labels[permissionName] || permissionName;
+}
+
 function populatePermissionUserSelect() {
   permissionUserSelect.innerHTML = '<option value="">— Escolha um usuário —</option>';
   
@@ -529,16 +560,25 @@ async function renderPermissionsGrid(userId) {
   permissionsGrid.innerHTML = "";
   
   if (!userId) {
-    permissionsGridContainer.style.display = "none";
+    permissionsGridContainer.classList.add("hidden");
+    document.getElementById("permissionsTitle").textContent = "Selecione um usuário";
+    document.getElementById("permissionsSummary").textContent = "Escolha alguém para ajustar permissões.";
+    document.getElementById("permissionsBadge").textContent = "0 permissões";
     return;
   }
 
-  permissionsGridContainer.style.display = "block";
+  permissionsGridContainer.classList.remove("hidden");
 
   await loadUserPermissions(userId);
   const userPerms = userPermissions[userId] || [];
+  const selectedUser = users.find(u => String(u.id) === String(userId));
 
-  // Agrupar permissões por categoria
+  document.getElementById("permissionsTitle").textContent = selectedUser ? `Permissões de ${selectedUser.username}` : "Permissões do usuário";
+  document.getElementById("permissionsSummary").textContent = selectedUser
+    ? `${selectedUser.role === 'admin' ? 'Administrador' : 'Usuário'} • ${userPerms.length} permissões ativas`
+    : "Selecione um usuário para ajustar";
+  document.getElementById("permissionsBadge").textContent = `${userPerms.length} permissão${userPerms.length === 1 ? '' : 's'}`;
+
   const categories = {};
   allPermissions.forEach(perm => {
     const cat = perm.category || 'Outro';
@@ -546,7 +586,6 @@ async function renderPermissionsGrid(userId) {
     categories[cat].push(perm);
   });
 
-  // Renderizar categorias
   Object.keys(categories).sort().forEach(catName => {
     const catDiv = document.createElement("div");
     catDiv.className = "permissions-category";
@@ -559,11 +598,7 @@ async function renderPermissionsGrid(userId) {
       const hasPermission = userPerms.some(up => up.id === perm.id);
       
       const label = document.createElement("label");
-      label.style.display = "flex";
-      label.style.alignItems = "center";
-      label.style.gap = "8px";
-      label.style.marginBottom = "8px";
-      label.style.cursor = "pointer";
+      label.className = "permission-option";
 
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
@@ -572,8 +607,9 @@ async function renderPermissionsGrid(userId) {
       checkbox.dataset.permissionName = perm.name;
       checkbox.onchange = () => handlePermissionChange(userId, perm.id, checkbox.checked);
 
-      const text = document.createElement("span");
-      text.innerHTML = `<strong>${perm.name}</strong><br><small style="color:var(--text-muted);">${perm.description || ''}</small>`;
+      const text = document.createElement("div");
+      text.className = "permission-text";
+      text.innerHTML = `<strong>${getPermissionLabel(perm.name)}</strong><div class="permission-description">${perm.description || ''}</div>`;
 
       label.appendChild(checkbox);
       label.appendChild(text);
@@ -656,17 +692,49 @@ function getScheduledExitWindow(daysAhead = 7) {
   const future = new Date(today);
   future.setDate(today.getDate() + daysAhead);
 
-  return cars
-    .filter(car => {
-      if (!car.scheduledDeparture) return false;
-      if (car.departureDate) return false;
+  const items = [];
 
-      const exit = new Date(car.scheduledDeparture);
-      exit.setHours(0, 0, 0, 0);
+  cars.forEach(car => {
+    if (!car.scheduledDeparture || car.departureDate) return;
 
-      return exit >= today && exit <= future;
-    })
-    .sort((a, b) => new Date(a.scheduledDeparture) - new Date(b.scheduledDeparture));
+    const exit = new Date(car.scheduledDeparture);
+    exit.setHours(0, 0, 0, 0);
+
+    if (exit >= today && exit <= future) {
+      items.push({
+        id: `car-${car.id}`,
+        kind: "car",
+        title: car.name,
+        model: car.model,
+        plate: car.plate,
+        vendor: "",
+        displayDate: car.scheduledDeparture,
+        relatedCar: car
+      });
+    }
+  });
+
+  events.forEach(ev => {
+    if (ev.type !== "saida" || !ev.date) return;
+
+    const eventDay = new Date(`${ev.date}T00:00:00`);
+    if (eventDay < today || eventDay > future) return;
+
+    const relatedCar = ev.carId ? cars.find(c => c.id === ev.carId) : null;
+
+    items.push({
+      id: `event-${ev.id}`,
+      kind: "event",
+      title: ev.title || (relatedCar ? relatedCar.name : "Saída"),
+      model: relatedCar ? relatedCar.model : "",
+      plate: relatedCar ? relatedCar.plate : "",
+      vendor: ev.vendor || "",
+      displayDate: `${ev.date}T${ev.time || "00:00"}`,
+      relatedCar
+    });
+  });
+
+  return items.sort((a, b) => new Date(a.displayDate) - new Date(b.displayDate));
 }
 
 function getImmediateExits() {
@@ -688,16 +756,17 @@ function showNotificationModal() {
   if (immediate.length === 0) {
     notificationModalBody.innerHTML = "<p>Nenhuma saída programada para hoje ou amanhã.</p>";
   } else {
-    immediate.forEach(car => {
-      const item = document.createElement("div");
-      item.className = "notification-item";
-      item.innerHTML = `
-        <strong>${car.name}</strong><br>
-        Modelo: ${car.model}<br>
-        Placa: ${car.plate}<br>
-        Saída prevista: ${formatDateTime(car.scheduledDeparture)}
+    immediate.forEach(item => {
+      const card = document.createElement("div");
+      card.className = "notification-item";
+      card.innerHTML = `
+        <strong>${item.title}</strong><br>
+        ${item.model ? `Modelo: ${item.model}<br>` : ""}
+        ${item.plate ? `Placa: ${item.plate}<br>` : ""}
+        ${item.vendor ? `Vendedor: ${item.vendor}<br>` : ""}
+        Saída: ${formatDateTime(item.displayDate)}
       `;
-      notificationModalBody.appendChild(item);
+      notificationModalBody.appendChild(card);
     });
   }
   notificationModal.classList.remove("hidden");
@@ -709,16 +778,17 @@ function showUpcomingModal() {
   if (upcoming.length === 0) {
     upcomingModalBody.innerHTML = "<p>Nenhuma saída programada nos próximos 7 dias.</p>";
   } else {
-    upcoming.forEach(car => {
-      const item = document.createElement("div");
-      item.className = "notification-item";
-      item.innerHTML = `
-        <strong>${car.name}</strong><br>
-        Modelo: ${car.model}<br>
-        Placa: ${car.plate}<br>
-        Saída prevista: ${formatDateTime(car.scheduledDeparture)}
+    upcoming.forEach(item => {
+      const card = document.createElement("div");
+      card.className = "notification-item";
+      card.innerHTML = `
+        <strong>${item.title}</strong><br>
+        ${item.model ? `Modelo: ${item.model}<br>` : ""}
+        ${item.plate ? `Placa: ${item.plate}<br>` : ""}
+        ${item.vendor ? `Vendedor: ${item.vendor}<br>` : ""}
+        Saída: ${formatDateTime(item.displayDate)}
       `;
-      upcomingModalBody.appendChild(item);
+      upcomingModalBody.appendChild(card);
     });
   }
   upcomingModal.classList.remove("hidden");
@@ -896,7 +966,7 @@ const inStock = !hasExited;
     if (inStock && canEditFlag) {
       const btn = document.createElement("button");
       btn.className = "exit"; btn.textContent = "Registrar saída";
-      btn.onclick = () => markAsExited(car.id);
+      btn.onclick = () => openExitModal();
       actions.appendChild(btn);
     }
 
@@ -953,7 +1023,7 @@ const inStock = !hasExited;
     if (inStock && canEditFlag) {
       const btn = document.createElement("button");
       btn.className = "exit"; btn.textContent = "Registrar saída";
-      btn.onclick = () => markAsExited(car.id);
+      btn.onclick = () => openExitModal();
       cardActions.appendChild(btn);
     }
 
@@ -972,44 +1042,125 @@ async function removeCar(id) {
   }
 }
 
-function confirmExitPlate(car) {
-  if (!car) return false;
-  while (true) {
-    const plate = prompt(`Digite a placa do veículo ${car.name} para confirmar a saída:`);
-    if (plate === null) return false;
-    if (plate.trim().toUpperCase() === car.plate.toUpperCase()) return true;
-    alert("Placa incorreta. Saída não registrada.");
-  }
+function closeExitModalWindow() {
+  exitModal.classList.add("hidden");
+  selectedExitCarId = null;
+  exitStepForm.classList.add("hidden");
+  exitStepSelection.classList.remove("hidden");
+  exitForm.reset();
 }
 
-async function markAsExited(id) {
+function showExitSelectionStep() {
+  exitStepSelection.classList.remove("hidden");
+  exitStepForm.classList.add("hidden");
+}
 
-  const car = cars.find(c => c.id === id);
-  if (!car) return;
+function renderExitCarsGrid() {
+  const availableCars = cars.filter(car => !car.departureDate || car.departureDate.trim() === "");
+  exitCarsGrid.innerHTML = "";
 
-  if (!confirmExitPlate(car)) return;
+  if (availableCars.length === 0) {
+    exitCarsGrid.innerHTML = '<div class="empty-row">Nenhum carro disponível para saída no momento.</div>';
+    return;
+  }
+
+  availableCars.forEach(car => {
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className = "exit-car-card";
+    card.innerHTML = `
+      <div class="exit-car-card__title">${car.name}</div>
+      <div class="exit-car-card__meta">Modelo: ${car.model}</div>
+      <div class="exit-car-card__meta">Placa: <strong>${car.plate}</strong></div>
+      <div class="exit-car-card__meta">Chassi: ${car.chassis || "—"}</div>
+      <div class="exit-car-card__meta">Chegada: ${formatDateTime(car.arrivalDate)}</div>
+    `;
+    card.onclick = () => selectExitCar(car);
+    exitCarsGrid.appendChild(card);
+  });
+}
+
+function selectExitCar(car) {
+  selectedExitCarId = car.id;
+  exitModalTitle.textContent = "Dados da saída";
+  exitModalSubtitle.textContent = `Preencha as informações da saída para ${car.name}.`;
+  exitSelectedCard.innerHTML = `
+    <div class="exit-selected-card__title">${car.name}</div>
+    <div class="exit-selected-card__meta">Modelo: ${car.model}</div>
+    <div class="exit-selected-card__meta">Placa: ${car.plate}</div>
+    <div class="exit-selected-card__meta">Chassi: ${car.chassis || "—"}</div>
+  `;
+  exitDate.value = new Date().toISOString().slice(0, 10);
+  exitTime.value = "08:00";
+  exitVendor.value = "";
+  exitClient.value = "";
+  exitNote.value = "";
+  exitStepSelection.classList.add("hidden");
+  exitStepForm.classList.remove("hidden");
+}
+
+function openExitModal() {
+  exitModalTitle.textContent = "Registrar saída";
+  exitModalSubtitle.textContent = "Escolha o veículo e preencha os dados da saída.";
+  renderExitCarsGrid();
+  showExitSelectionStep();
+  exitForm.reset();
+  exitModal.classList.remove("hidden");
+}
+
+async function submitExitRegistration(event) {
+  event.preventDefault();
+
+  if (!selectedExitCarId) {
+    alert("Selecione um veículo antes de salvar.");
+    return;
+  }
+
+  const car = cars.find(c => c.id === selectedExitCarId);
+  if (!car) {
+    alert("Veículo não encontrado.");
+    return;
+  }
+
+  const exitDateTime = `${exitDate.value}T${exitTime.value}`;
+  const vendor = exitVendor.value.trim();
+  const client = exitClient.value.trim();
+  const note = exitNote.value.trim();
+
+  if (!exitDate.value || !exitTime.value || !vendor) {
+    alert("Preencha data, horário e vendedor.");
+    return;
+  }
 
   try {
-
-    await updateCarData(id, {
+    await updateCarData(car.id, {
       name: car.name,
       model: car.model,
       plate: car.plate,
       chassis: car.chassis,
       arrivalDate: car.arrivalDate,
       scheduledDeparture: car.scheduledDeparture,
-      departureDate: new Date().toISOString().slice(0, 16)
+      departureDate: exitDateTime
+    });
+
+    await createEvent({
+      type: "saida",
+      title: `Saída - ${car.name}`,
+      date: exitDate.value,
+      time: exitTime.value,
+      carId: car.id,
+      vendor,
+      client: client || null,
+      note: note || null
     });
 
     await refreshAppData();
-
+    closeExitModalWindow();
+    showAppMessage(`Saída registrada para ${car.name}.`, "info");
   } catch (error) {
-
-    console.error("Error updating departure date:", error);
+    console.error("Error registering exit:", error);
     alert("Erro ao registrar saída");
-
   }
-
 }
 
 /* ==========================================================
@@ -1602,9 +1753,21 @@ calNext.addEventListener("click", () => { calCurrentDate.setMonth(calCurrentDate
 calToday.addEventListener("click", () => { calCurrentDate = new Date(); renderCalendar(); });
 closeEventModal.addEventListener("click",  closeEventModalFn);
 cancelEventModal.addEventListener("click", closeEventModalFn);
+closeExitModal.addEventListener("click", closeExitModalWindow);
+cancelExitModal.addEventListener("click", closeExitModalWindow);
+backExitSelection.addEventListener("click", () => {
+  selectedExitCarId = null;
+  exitSelectedCard.innerHTML = "";
+  showExitSelectionStep();
+  exitModalTitle.textContent = "Registrar saída";
+  exitModalSubtitle.textContent = "Escolha o veículo e preencha os dados da saída.";
+  exitForm.reset();
+});
 closeDayModal.addEventListener("click",    closeDayModalFn);
 closeDayModalBtn.addEventListener("click", closeDayModalFn);
 addEventFromDay.addEventListener("click",  () => { closeDayModalFn(); openEventModal(null, dayModalDate); });
+
+exitForm.addEventListener("submit", submitExitRegistration);
 
 eventForm.addEventListener("submit", async e => {
   e.preventDefault();
@@ -1642,6 +1805,7 @@ window.addEventListener("click", e => {
   if (e.target === carModal)          closeModalWindow();
   if (e.target === settingsAuthModal) closeSettingsAuthModal();
   if (e.target === eventModal)        closeEventModalFn();
+  if (e.target === exitModal)         closeExitModalWindow();
   if (e.target === dayModal)          closeDayModalFn();
   if (e.target === notificationModal) notificationModal.classList.add("hidden");
   if (e.target === upcomingModal)     upcomingModal.classList.add("hidden");

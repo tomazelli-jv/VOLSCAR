@@ -763,7 +763,8 @@ Saída prevista: ${finalScheduledDeparture || '-'}
         SELECT
           id,
           username,
-          role
+          role,
+          status
         FROM users
         ORDER BY username
       `);
@@ -815,6 +816,65 @@ Saída prevista: ${finalScheduledDeparture || '-'}
     }
   });
 
+  app.post('/api/users/:userId/permissions/:permissionId', authenticateToken, async (req, res) => {
+    try {
+      const { userId, permissionId } = req.params;
+
+      const [userRows] = await pool.execute(
+        'SELECT id FROM users WHERE id = ?',
+        [userId]
+      );
+
+      if (!userRows.length) {
+        return res.status(404).json({ error: 'Usuário não encontrado' });
+      }
+
+      const [permissionRows] = await pool.execute(
+        'SELECT id FROM permissions WHERE id = ?',
+        [permissionId]
+      );
+
+      if (!permissionRows.length) {
+        return res.status(404).json({ error: 'Permissão não encontrada' });
+      }
+
+      const [existingRows] = await pool.execute(
+        'SELECT id FROM user_permissions WHERE user_id = ? AND permission_id = ?',
+        [userId, permissionId]
+      );
+
+      if (existingRows.length) {
+        return res.status(200).json({ message: 'Permissão já concedida' });
+      }
+
+      await pool.execute(
+        'INSERT INTO user_permissions (user_id, permission_id) VALUES (?, ?)',
+        [userId, permissionId]
+      );
+
+      res.status(201).json({ message: 'Permissão concedida com sucesso' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete('/api/users/:userId/permissions/:permissionId', authenticateToken, async (req, res) => {
+    try {
+      const { userId, permissionId } = req.params;
+
+      await pool.execute(
+        'DELETE FROM user_permissions WHERE user_id = ? AND permission_id = ?',
+        [userId, permissionId]
+      );
+
+      res.json({ message: 'Permissão removida com sucesso' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // =======================================
   // CREATE USER
   // =======================================
@@ -826,6 +886,7 @@ Saída prevista: ${finalScheduledDeparture || '-'}
         username,
         password,
         role,
+        status,
         permissions = []
       } = req.body;
 
@@ -857,14 +918,16 @@ Saída prevista: ${finalScheduledDeparture || '-'}
         (
           username,
           password,
-          role
+          role,
+          status
         )
-        VALUES (?, ?, ?)
+        VALUES (?, ?, ?, ?)
         `,
         [
           username,
           hash,
-          role || 'user'
+          role || 'user',
+          status || 'active'
         ]
       );
 
@@ -928,6 +991,7 @@ Saída prevista: ${finalScheduledDeparture || '-'}
       const {
         username,
         role,
+        status,
         permissions = []
       } = req.body;
 
@@ -963,12 +1027,14 @@ Saída prevista: ${finalScheduledDeparture || '-'}
         UPDATE users
         SET
           username = ?,
-          role = ?
+          role = ?,
+          status = ?
         WHERE id = ?
         `,
         [
           username,
           role,
+          status || 'active',
           id
         ]
       );

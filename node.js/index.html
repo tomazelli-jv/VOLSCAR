@@ -262,13 +262,23 @@
         <!-- TAB: Gerenciar Permissões -->
         <div class="settings-tab-content" id="permissionsTab">
           <div class="permissions-wrapper">
-            <div class="permissions-select">
-              <label>Selecione um usuário:</label>
-              <select id="permissionUserSelect" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-size:0.9rem;margin-bottom:20px;">
-                <option value="">— Escolha um usuário —</option>
-              </select>
+            <div class="permissions-card">
+              <div class="permissions-card-header">
+                <div>
+                  <div class="permissions-card-eyebrow">Gerenciar acessos</div>
+                  <h3 id="permissionsTitle">Selecione um usuário</h3>
+                  <p id="permissionsSummary">Escolha alguém para ajustar permissões.</p>
+                </div>
+                <div class="permissions-card-badge" id="permissionsBadge">0 permissões</div>
+              </div>
+              <div class="permissions-select">
+                <label for="permissionUserSelect">Selecione um usuário</label>
+                <select id="permissionUserSelect">
+                  <option value="">— Escolha um usuário —</option>
+                </select>
+              </div>
             </div>
-            <div id="permissionsGridContainer" style="display:none;">
+            <div id="permissionsGridContainer" class="hidden">
               <div class="permissions-grid" id="permissionsGrid"></div>
             </div>
           </div>
@@ -461,6 +471,65 @@
             <button type="submit" id="saveEventButton">Salvar evento</button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR SAÍDA -->
+  <div class="modal hidden" id="exitModal">
+    <div class="modal-content modal-content--wide">
+      <div class="modal-top">
+        <div>
+          <h2 id="exitModalTitle">Registrar saída</h2>
+          <p id="exitModalSubtitle" style="margin:6px 0 0;color:var(--text-muted);">Escolha o veículo e preencha os dados da saída.</p>
+        </div>
+        <button class="close-modal" id="closeExitModal">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="exitStepSelection">
+          <div id="exitCarsGrid" class="exit-cars-grid"></div>
+        </div>
+        <div id="exitStepForm" class="hidden">
+          <div id="exitSelectedCard" class="exit-selected-card"></div>
+          <form id="exitForm">
+            <div class="modal-grid">
+              <div>
+                <label>Data</label>
+                <input type="date" id="exitDate" required />
+              </div>
+              <div>
+                <label>Horário</label>
+                <input type="time" id="exitTime" required />
+              </div>
+              <div>
+                <label>Vendedor</label>
+                <select id="exitVendor" required>
+                  <option value="">— Selecione o vendedor —</option>
+                  <option value="jadson">Jadson</option>
+                  <option value="vilmara">Vilmara</option>
+                  <option value="thamires">Thamires</option>
+                  <option value="iorrana">Iorrana</option>
+                  <option value="ana flavia">Ana Flavia</option>
+                  <option value="patricia">Patricia</option>
+                  <option value="marcelo">Marcelo</option>
+                </select>
+              </div>
+              <div>
+                <label>Cliente</label>
+                <input type="text" id="exitClient" placeholder="Nome do cliente" />
+              </div>
+              <div style="grid-column: 1 / -1">
+                <label>Observação</label>
+                <input type="text" id="exitNote" placeholder="Detalhes adicionais da saída…" />
+              </div>
+            </div>
+            <div class="modal-actions" style="margin-top:16px;">
+              <button type="button" class="secondary" id="backExitSelection">Voltar</button>
+              <button type="button" class="secondary" id="cancelExitModal">Cancelar</button>
+              <button type="submit" id="saveExitButton">Salvar saída</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   </div>
