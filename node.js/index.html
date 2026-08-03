@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VW · Gerenciador de Frota</title>
   <link rel="stylesheet" href="styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -41,12 +41,12 @@
         </div>
 
         <div class="field-group">
-          <label>Usuário</label>
+          <label for="loginUsername">Usuário</label>
           <input type="text" id="loginUsername" placeholder="Digite seu usuário" autocomplete="username" />
         </div>
 
         <div class="field-group">
-          <label>Senha</label>
+          <label for="loginPassword">Senha</label>
           <input type="password" id="loginPassword" placeholder="Digite sua senha" autocomplete="current-password" />
         </div>
 
@@ -110,7 +110,8 @@
         </div>
         <div class="filters">
           <input type="text" id="filterText" placeholder="🔍  Buscar por nome, modelo ou placa…" />
-          <select id="filterStatus">
+          <label class="sr-only" for="filterStatus">Filtrar por status</label>
+          <select id="filterStatus" class="filter-select" aria-label="Filtrar por status">
             <option value="all">Todos os veículos</option>
             <option value="in">Em estoque</option>
             <option value="out">Saídas confirmadas</option>
@@ -232,13 +233,6 @@
           </div>
         </div>
 
-        <!-- Abas de Configurações -->
-        <div class="settings-tabs">
-          <button class="settings-tab-btn active" data-settings-tab="users">Usuários</button>
-          <button class="settings-tab-btn" data-settings-tab="permissions">Permissões</button>
-        </div>
-
-        <!-- TAB: Gerenciar Usuários -->
         <div class="settings-tab-content active" id="usersTab">
           <div class="settings-toolbar">
             <button class="btn-primary" id="newUserButton">+ Novo Usuário</button>
@@ -251,36 +245,11 @@
                   <th>Email</th>
                   <th>Função</th>
                   <th>Status</th>
-                  <th style="width:120px;">Ações</th>
+                  <th class="actions-col">Ações</th>
                 </tr>
               </thead>
               <tbody id="usersTableBody"></tbody>
             </table>
-          </div>
-        </div>
-
-        <!-- TAB: Gerenciar Permissões -->
-        <div class="settings-tab-content" id="permissionsTab">
-          <div class="permissions-wrapper">
-            <div class="permissions-card">
-              <div class="permissions-card-header">
-                <div>
-                  <div class="permissions-card-eyebrow">Gerenciar acessos</div>
-                  <h3 id="permissionsTitle">Selecione um usuário</h3>
-                  <p id="permissionsSummary">Escolha alguém para ajustar permissões.</p>
-                </div>
-                <div class="permissions-card-badge" id="permissionsBadge">0 permissões</div>
-              </div>
-              <div class="permissions-select">
-                <label for="permissionUserSelect">Selecione um usuário</label>
-                <select id="permissionUserSelect">
-                  <option value="">— Escolha um usuário —</option>
-                </select>
-              </div>
-            </div>
-            <div id="permissionsGridContainer" class="hidden">
-              <div class="permissions-grid" id="permissionsGrid"></div>
-            </div>
           </div>
         </div>
       </section>
@@ -304,27 +273,27 @@
         <form id="carForm">
           <div class="modal-grid">
             <div>
-              <label>Nome do veículo</label>
+              <label for="carName">Nome do veículo</label>
               <input type="text" id="carName" required placeholder="Ex: Volkswagen Polo" />
             </div>
             <div>
-              <label>Modelo</label>
+              <label for="carModel">Modelo</label>
               <input type="text" id="carModel" required placeholder="Ex: Polo" />
             </div>
             <div>
-              <label>Placa</label>
+              <label for="carPlate">Placa</label>
               <input type="text" id="carPlate" required placeholder="ABC-1234" />
             </div>
             <div>
-              <label>Chassi</label>
+              <label for="carChassis">Chassi</label>
               <input type="text" id="carChassis" required placeholder="9BWZZZ..." />
             </div>
             <div>
-              <label>Data e hora de chegada</label>
+              <label for="carArrival">Data e hora de chegada</label>
               <input type="datetime-local" id="carArrival" required />
             </div>
             <div>
-              <label>Saída prevista (opcional)</label>
+              <label for="carScheduledDeparture">Saída prevista (opcional)</label>
               <input type="datetime-local" id="carScheduledDeparture" />
             </div>
           </div>
@@ -345,11 +314,11 @@
         <button class="close-modal" id="closeSettingsAuth">×</button>
       </div>
       <div class="modal-body">
-        <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:18px;">
+        <p class="settings-auth-help">
           Somente o usuário DEV pode acessar esta área. Digite a senha abaixo para continuar.
         </p>
         <form id="settingsAuthForm">
-          <label>Senha DEV</label>
+          <label for="settingsPassword">Senha DEV</label>
           <input type="password" id="settingsPassword" required placeholder="••••••••" />
           <p class="login-error" id="settingsError"></p>
           <div class="modal-actions">
@@ -372,33 +341,45 @@
         <form id="userForm">
           <div class="modal-grid">
             <div>
-              <label>Nome de usuário *</label>
+              <label for="userName">Nome de usuário *</label>
               <input type="text" id="userName" required placeholder="Digite o nome de usuário" />
             </div>
             <div>
-              <label>Email</label>
+              <label for="userEmail">Email</label>
               <input type="email" id="userEmail" placeholder="Digite o email" />
             </div>
             <div>
-              <label>Senha *</label>
-              <input type="password" id="userPassword" required placeholder="Digite uma senha" />
+              <label for="userPassword">Senha *</label>
+              <input type="password" id="userPassword" placeholder="Digite uma senha" />
             </div>
             <div>
-              <label>Função</label>
-              <select id="userRole" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-size:0.9rem;margin-bottom:14px;">
+              <label for="userRole">Função</label>
+              <select id="userRole" class="modal-select">
                 <option value="user">Usuário</option>
                 <option value="admin">Administrador</option>
               </select>
             </div>
             <div>
-              <label>Status</label>
-              <select id="userStatus" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-size:0.9rem;margin-bottom:14px;">
+              <label for="userStatus">Status</label>
+              <select id="userStatus" class="modal-select">
                 <option value="active">Ativo</option>
                 <option value="inactive">Inativo</option>
               </select>
             </div>
           </div>
-          <p style="color:var(--text-muted);font-size:0.875rem;margin:14px 0;">* Campos obrigatórios</p>
+
+          <div class="user-permissions-panel">
+            <div class="user-permissions-header">
+              <div>
+                <h3>Permissões do usuário</h3>
+                <p>Selecione pelo menos uma permissão para salvar.</p>
+              </div>
+              <span id="userPermissionCount" class="user-permission-count">0 selecionadas</span>
+            </div>
+            <div id="userPermissionsContainer" class="user-permissions-grid"></div>
+          </div>
+
+          <p class="modal-required-note">* Campos obrigatórios</p>
           <p class="login-error" id="userFormError"></p>
           <div class="modal-actions">
             <button type="button" class="secondary" id="cancelUserModal">Cancelar</button>
@@ -419,28 +400,28 @@
       <div class="modal-body">
         <form id="eventForm">
           <div class="modal-grid">
-            <div style="grid-column: 1 / -1">
-              <label>Título do evento (opcional)</label>
+            <div class="modal-full-width">
+              <label for="eventTitle">Título do evento (opcional)</label>
               <input type="text" id="eventTitle" placeholder="Ex: Entrega ao cliente, Revisão, Transferência…" />
             </div>
             <div>
-              <label>Data</label>
+              <label for="eventDate">Data</label>
               <input type="date" id="eventDate" required />
             </div>
             <div>
-              <label>Horário</label>
+              <label for="eventTime">Horário</label>
               <input type="time" id="eventTime" required />
             </div>
             <div>
-              <label>Tipo</label>
-              <select id="eventType" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-size:0.9rem;margin-bottom:14px;">
+              <label for="eventType">Tipo</label>
+              <select id="eventType" class="modal-select">
                 <option value="saida">🚗 Saída</option>
                 <option value="entrega">🤝 Entrega</option>
               </select>
             </div>
             <div>
-              <label>Vendedor</label>
-              <select id="eventVendor" required style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-size:0.9rem;margin-bottom:14px;">
+              <label for="eventVendor">Vendedor</label>
+              <select id="eventVendor" class="modal-select" required>
                 <option value="">— Selecione o vendedor —</option>
                 <option value="jadson">Jadson</option>
                 <option value="vilmara">Vilmara</option>
@@ -452,17 +433,17 @@
               </select>
             </div>
             <div>
-              <label>Cliente</label>
+              <label for="eventClient">Cliente</label>
               <input type="text" id="eventClient" placeholder="Nome do cliente" />
             </div>
-            <div style="grid-column: 1 / -1">
-              <label>Veículo vinculado (opcional)</label>
-              <select id="eventCar" style="width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:var(--radius);background:var(--surface2);color:var(--text);font-size:0.9rem;margin-bottom:14px;">
+            <div class="modal-full-width">
+              <label for="eventCar">Veículo vinculado (opcional)</label>
+              <select id="eventCar" class="modal-select">
                 <option value="">— Nenhum veículo —</option>
               </select>
             </div>
-            <div style="grid-column: 1 / -1">
-              <label>Observação (opcional)</label>
+            <div class="modal-full-width">
+              <label for="eventNote">Observação (opcional)</label>
               <input type="text" id="eventNote" placeholder="Detalhes adicionais do evento…" />
             </div>
           </div>
@@ -481,7 +462,7 @@
       <div class="modal-top">
         <div>
           <h2 id="exitModalTitle">Registrar saída</h2>
-          <p id="exitModalSubtitle" style="margin:6px 0 0;color:var(--text-muted);">Escolha o veículo e preencha os dados da saída.</p>
+          <p id="exitModalSubtitle" class="modal-subtitle">Escolha o veículo e preencha os dados da saída.</p>
         </div>
         <button class="close-modal" id="closeExitModal">×</button>
       </div>
@@ -494,15 +475,15 @@
           <form id="exitForm">
             <div class="modal-grid">
               <div>
-                <label>Data</label>
+                <label for="exitDate">Data</label>
                 <input type="date" id="exitDate" required />
               </div>
               <div>
-                <label>Horário</label>
+                <label for="exitTime">Horário</label>
                 <input type="time" id="exitTime" required />
               </div>
               <div>
-                <label>Vendedor</label>
+                <label for="exitVendor">Vendedor</label>
                 <select id="exitVendor" required>
                   <option value="">— Selecione o vendedor —</option>
                   <option value="jadson">Jadson</option>
@@ -515,15 +496,15 @@
                 </select>
               </div>
               <div>
-                <label>Cliente</label>
+                <label for="exitClient">Cliente</label>
                 <input type="text" id="exitClient" placeholder="Nome do cliente" />
               </div>
-              <div style="grid-column: 1 / -1">
-                <label>Observação</label>
+              <div class="modal-full-width">
+                <label for="exitNote">Observação</label>
                 <input type="text" id="exitNote" placeholder="Detalhes adicionais da saída…" />
               </div>
             </div>
-            <div class="modal-actions" style="margin-top:16px;">
+            <div class="modal-actions modal-actions--spaced">
               <button type="button" class="secondary" id="backExitSelection">Voltar</button>
               <button type="button" class="secondary" id="cancelExitModal">Cancelar</button>
               <button type="submit" id="saveExitButton">Salvar saída</button>
@@ -543,7 +524,7 @@
       </div>
       <div class="modal-body">
         <div id="dayModalBody"></div>
-        <div class="modal-actions" style="margin-top:16px;">
+        <div class="modal-actions modal-actions--spaced">
           <button type="button" class="secondary" id="addEventFromDay">+ Adicionar evento neste dia</button>
           <button type="button" class="secondary" id="closeDayModalBtn">Fechar</button>
         </div>

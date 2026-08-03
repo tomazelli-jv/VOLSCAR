@@ -62,12 +62,9 @@ const settingsError         = document.getElementById("settingsError");
 const newUserButton         = document.getElementById("newUserButton");
 const usersTableBody        = document.getElementById("usersTableBody");
 const usersTab              = document.getElementById("usersTab");
-const permissionsTab        = document.getElementById("permissionsTab");
-const settingsTabBtns       = Array.from(document.querySelectorAll(".settings-tab-btn"));
-const permissionUserSelect  = document.getElementById("permissionUserSelect");
-const permissionsGridContainer = document.getElementById("permissionsGridContainer");
-const permissionsGrid       = document.getElementById("permissionsGrid");
 const userModal             = document.getElementById("userModal");
+const userPermissionsContainer = document.getElementById("userPermissionsContainer");
+const userPermissionCount   = document.getElementById("userPermissionCount");
 const userModalTitle        = document.getElementById("userModalTitle");
 const closeUserModal        = document.getElementById("closeUserModal");
 const cancelUserModal       = document.getElementById("cancelUserModal");
@@ -435,10 +432,65 @@ async function revokePermission(userId, permissionId) {
   return await response.json();
 }
 
-function openUserModal(editId = null) {
+async function getUserPermissionIds(userId = null) {
+  if (userId && userPermissions[userId]) {
+    return userPermissions[userId].map(p => p.id);
+  }
+  return [];
+}
+
+function renderUserPermissionOptions(selectedUserId = null) {
+  userPermissionsContainer.innerHTML = "";
+  const selectedIds = new Set(getUserPermissionIds(selectedUserId));
+  const categories = {};
+
+  allPermissions.forEach(permission => {
+    const category = permission.category || "Outro";
+    if (!categories[category]) categories[category] = [];
+    categories[category].push(permission);
+  });
+
+  Object.keys(categories).sort().forEach(categoryName => {
+    const categoryBlock = document.createElement("div");
+    categoryBlock.className = "user-permissions-category";
+
+    const title = document.createElement("h4");
+    title.textContent = categoryName;
+    categoryBlock.appendChild(title);
+
+    categories[categoryName].forEach(permission => {
+      const label = document.createElement("label");
+      label.className = "user-permission-option";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.dataset.permissionId = permission.id;
+      checkbox.checked = selectedIds.has(permission.id);
+      checkbox.addEventListener("change", updateUserPermissionCount);
+
+      const text = document.createElement("div");
+      text.innerHTML = `<strong>${permission.name}</strong><div>${permission.description || ""}</div>`;
+
+      label.appendChild(checkbox);
+      label.appendChild(text);
+      categoryBlock.appendChild(label);
+    });
+
+    userPermissionsContainer.appendChild(categoryBlock);
+  });
+
+  updateUserPermissionCount();
+}
+
+function updateUserPermissionCount() {
+  const count = userPermissionsContainer.querySelectorAll('input[type="checkbox"]:checked').length;
+  userPermissionCount.textContent = `${count} selecionada${count === 1 ? "" : "s"}`;
+}
+
+async function openUserModal(editId = null) {
   editingUserId = editId;
   userFormError.textContent = "";
-  
+
   if (editId) {
     const user = users.find(u => u.id === editId);
     if (user) {
@@ -448,8 +500,10 @@ function openUserModal(editId = null) {
       userPassword.value = "";
       userPassword.placeholder = "Deixe em branco para não alterar";
       userRole.value = user.role;
-      userStatus.value = user.status;
+      userStatus.value = user.status || "active";
       userName.disabled = true;
+      await loadUserPermissions(editId);
+      renderUserPermissionOptions(editId);
     }
   } else {
     userModalTitle.textContent = "Novo usuário";
@@ -460,8 +514,9 @@ function openUserModal(editId = null) {
     userRole.value = "user";
     userStatus.value = "active";
     userName.disabled = false;
+    renderUserPermissionOptions();
   }
-  
+
   userModal.classList.remove("hidden");
 }
 
@@ -469,6 +524,8 @@ function closeUserModalWindow() {
   userModal.classList.add("hidden");
   editingUserId = null;
   userName.disabled = false;
+  userPermissionsContainer.innerHTML = "";
+  userPermissionCount.textContent = "0 selecionadas";
 }
 
 function renderUsersTable() {
@@ -524,122 +581,14 @@ async function removeUser(userId, username) {
     showAppMessage(`Usuário "${username}" deletado com sucesso.`, "info");
     await loadUsers();
     renderUsersTable();
-    populatePermissionUserSelect();
   } catch (error) {
     console.error('Error deleting user:', error);
     alert(error.message || 'Erro ao deletar usuário');
   }
 }
 
-function getPermissionLabel(permissionName) {
-  const labels = {
-    view: "Visualizar",
-    add: "Adicionar",
-    edit: "Editar",
-    delete: "Excluir",
-    dashboard: "Dashboard",
-    settings: "Configurações",
-    create_users: "Criar novos usuários"
-  };
-
-  return labels[permissionName] || permissionName;
-}
-
-function populatePermissionUserSelect() {
-  permissionUserSelect.innerHTML = '<option value="">— Escolha um usuário —</option>';
-  
-  users.forEach(user => {
-    const opt = document.createElement("option");
-    opt.value = user.id;
-    opt.textContent = `${user.username} (${user.role})`;
-    permissionUserSelect.appendChild(opt);
-  });
-}
-
-async function renderPermissionsGrid(userId) {
-  permissionsGrid.innerHTML = "";
-  
-  if (!userId) {
-    permissionsGridContainer.classList.add("hidden");
-    document.getElementById("permissionsTitle").textContent = "Selecione um usuário";
-    document.getElementById("permissionsSummary").textContent = "Escolha alguém para ajustar permissões.";
-    document.getElementById("permissionsBadge").textContent = "0 permissões";
-    return;
-  }
-
-  permissionsGridContainer.classList.remove("hidden");
-
-  await loadUserPermissions(userId);
-  const userPerms = userPermissions[userId] || [];
-  const selectedUser = users.find(u => String(u.id) === String(userId));
-
-  document.getElementById("permissionsTitle").textContent = selectedUser ? `Permissões de ${selectedUser.username}` : "Permissões do usuário";
-  document.getElementById("permissionsSummary").textContent = selectedUser
-    ? `${selectedUser.role === 'admin' ? 'Administrador' : 'Usuário'} • ${userPerms.length} permissões ativas`
-    : "Selecione um usuário para ajustar";
-  document.getElementById("permissionsBadge").textContent = `${userPerms.length} permissão${userPerms.length === 1 ? '' : 's'}`;
-
-  const categories = {};
-  allPermissions.forEach(perm => {
-    const cat = perm.category || 'Outro';
-    if (!categories[cat]) categories[cat] = [];
-    categories[cat].push(perm);
-  });
-
-  Object.keys(categories).sort().forEach(catName => {
-    const catDiv = document.createElement("div");
-    catDiv.className = "permissions-category";
-    
-    const catTitle = document.createElement("h4");
-    catTitle.textContent = catName;
-    catDiv.appendChild(catTitle);
-
-    categories[catName].forEach(perm => {
-      const hasPermission = userPerms.some(up => up.id === perm.id);
-      
-      const label = document.createElement("label");
-      label.className = "permission-option";
-
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.checked = hasPermission;
-      checkbox.dataset.permissionId = perm.id;
-      checkbox.dataset.permissionName = perm.name;
-      checkbox.onchange = () => handlePermissionChange(userId, perm.id, checkbox.checked);
-
-      const text = document.createElement("div");
-      text.className = "permission-text";
-      text.innerHTML = `<strong>${getPermissionLabel(perm.name)}</strong><div class="permission-description">${perm.description || ''}</div>`;
-
-      label.appendChild(checkbox);
-      label.appendChild(text);
-      catDiv.appendChild(label);
-    });
-
-    permissionsGrid.appendChild(catDiv);
-  });
-}
-
-async function handlePermissionChange(userId, permissionId, granted) {
-  try {
-    if (granted) {
-      await grantPermission(userId, permissionId);
-    } else {
-      await revokePermission(userId, permissionId);
-    }
-    // Recarregar permissões
-    await loadUserPermissions(userId);
-    await renderPermissionsGrid(userId);
-  } catch (error) {
-    console.error('Error changing permission:', error);
-    alert(error.message || 'Erro ao alterar permissão');
-  }
-}
-
-function switchSettingsTab(tabName) {
-  settingsTabBtns.forEach(btn => btn.classList.toggle("active", btn.dataset.settingsTab === tabName));
-  usersTab.classList.toggle("hidden", tabName !== "users");
-  permissionsTab.classList.toggle("hidden", tabName !== "permissions");
+function switchSettingsTab() {
+  usersTab.classList.remove("hidden");
 }
 
 /* ==========================================================
@@ -1255,7 +1204,6 @@ async function refreshAppData() {
 
   if (currentUser.role === 'admin') {
     renderUsersTable();
-    populatePermissionUserSelect();
   }
 
   clearAppMessage();
@@ -1510,9 +1458,25 @@ function openDayModal(dateStr, dayEvs) {
 function closeDayModalFn() { dayModal.classList.add("hidden"); dayModalDate = null; }
 
 /* ── Modal Evento ── */
-function populateEventCarSelect() {
+function hasExitRecorded(car) {
+  const hasDepartureDate = !!car.departureDate && car.departureDate.trim() !== "";
+  const hasExitEvent = events.some(ev => ev.carId === car.id && ev.type === "saida");
+  return hasDepartureDate || hasExitEvent;
+}
+
+function populateEventCarSelect(selectedCarId = null) {
   eventCar.innerHTML = `<option value="">— Nenhum veículo —</option>`;
-  cars.filter(c => c.departureDate === "").forEach(c => {
+
+  const availableCars = cars.filter(c => !hasExitRecorded(c));
+
+  if (selectedCarId && !availableCars.some(c => c.id === selectedCarId)) {
+    const selectedCar = cars.find(c => c.id === selectedCarId);
+    if (selectedCar) {
+      availableCars.unshift(selectedCar);
+    }
+  }
+
+  availableCars.forEach(c => {
     const opt = document.createElement("option");
     opt.value = c.id;
     opt.textContent = `${c.name} · ${c.plate}`;
@@ -1522,7 +1486,8 @@ function populateEventCarSelect() {
 
 function openEventModal(editId = null, prefillDate = null) {
   editingEventId = editId;
-  populateEventCarSelect();
+  const selectedCarId = editId ? (events.find(e => e.id === editId)?.carId || null) : null;
+  populateEventCarSelect(selectedCarId);
   eventModalTitle.textContent = editId ? "Editar Evento" : "Novo Evento";
   eventDateFixed = !!prefillDate;
 
@@ -1623,11 +1588,21 @@ userForm.addEventListener("submit", async e => {
   e.preventDefault();
   userFormError.textContent = "";
 
+  const permissions = Array.from(userPermissionsContainer.querySelectorAll('input[type="checkbox"]:checked'))
+    .map(input => Number(input.dataset.permissionId))
+    .filter(Boolean);
+
+  if (permissions.length === 0) {
+    userFormError.textContent = "Selecione pelo menos uma permissão antes de salvar.";
+    return;
+  }
+
   const userData = {
     username: userName.value.trim(),
     email: userEmail.value.trim() || null,
     role: userRole.value,
-    status: userStatus.value
+    status: userStatus.value,
+    permissions
   };
 
   if (!userData.username) {
@@ -1663,28 +1638,6 @@ userForm.addEventListener("submit", async e => {
   } catch (error) {
     console.error('Error saving user:', error);
     userFormError.textContent = error.message || 'Erro ao salvar usuário';
-  }
-});
-
-// Abas de Configurações
-settingsTabBtns.forEach(btn => {
-  btn.addEventListener("click", () => {
-    const tabName = btn.dataset.settingsTab;
-    switchSettingsTab(tabName);
-    if (tabName === "permissions") {
-      populatePermissionUserSelect();
-      renderPermissionsGrid(null);
-    }
-  });
-});
-
-// Seletor de usuário para permissões
-permissionUserSelect.addEventListener("change", async (e) => {
-  const userId = e.target.value;
-  if (userId) {
-    await renderPermissionsGrid(userId);
-  } else {
-    permissionsGridContainer.style.display = "none";
   }
 });
 

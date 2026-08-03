@@ -7,6 +7,7 @@
   const jwt = require('jsonwebtoken');
   const path = require('path');
   const pool = require('./config/database');
+  const { validateUserPayload } = require('./utils/userValidation');
 
   console.log('DB_HOST:', process.env.DB_HOST);
 
@@ -896,6 +897,11 @@ Saída prevista: ${finalScheduledDeparture || '-'}
         });
       }
 
+      const validation = validateUserPayload(req.body);
+      if (!validation.valid) {
+        return res.status(400).json({ error: validation.error });
+      }
+
       // Verifica se o usuário já existe
       const [exists] = await pool.execute(
         'SELECT id FROM users WHERE username = ?',
@@ -999,6 +1005,11 @@ Saída prevista: ${finalScheduledDeparture || '-'}
         return res.status(400).json({
           error: 'Usuário é obrigatório'
         });
+      }
+
+      const validation = validateUserPayload(req.body);
+      if (!validation.valid) {
+        return res.status(400).json({ error: validation.error });
       }
 
       // Verifica se outro usuário já utiliza esse username
