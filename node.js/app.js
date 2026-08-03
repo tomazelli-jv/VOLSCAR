@@ -323,11 +323,22 @@ async function deleteEventData(id) {
 
 // ========== USER MANAGEMENT FUNCTIONS ==========
 
+function normalizeResponseArray(payload) {
+  if (Array.isArray(payload)) return payload;
+  if (!payload || typeof payload !== 'object') return [];
+  if (Array.isArray(payload.data)) return payload.data;
+  if (Array.isArray(payload.users)) return payload.users;
+  if (Array.isArray(payload.permissions)) return payload.permissions;
+  if (Array.isArray(payload.result)) return payload.result;
+  return [];
+}
+
 async function loadUsers() {
   try {
     const response = await apiFetch('/users');
     if (response.ok) {
-      users = await response.json();
+      const payload = await response.json().catch(() => null);
+      users = normalizeResponseArray(payload);
     } else {
       users = [];
     }
@@ -341,7 +352,8 @@ async function loadPermissions() {
   try {
     const response = await apiFetch('/permissions');
     if (response.ok) {
-      allPermissions = await response.json();
+      const payload = await response.json().catch(() => null);
+      allPermissions = normalizeResponseArray(payload);
     } else {
       allPermissions = [];
     }
@@ -355,7 +367,8 @@ async function loadUserPermissions(userId) {
   try {
     const response = await apiFetch(`/users/${userId}/permissions`);
     if (response.ok) {
-      userPermissions[userId] = await response.json();
+      const payload = await response.json().catch(() => null);
+      userPermissions[userId] = normalizeResponseArray(payload);
     } else {
       userPermissions[userId] = [];
     }
@@ -432,19 +445,23 @@ async function revokePermission(userId, permissionId) {
   return await response.json();
 }
 
-async function getUserPermissionIds(userId = null) {
-  if (userId && userPermissions[userId]) {
-    return userPermissions[userId].map(p => p.id);
-  }
-  return [];
+function getUserPermissionIds(userId = null) {
+  const permissions = userId && userPermissions[userId] ? userPermissions[userId] : [];
+  const normalizedPermissions = normalizeResponseArray(permissions);
+  return normalizedPermissions
+    .map(permission => permission.id ?? permission.permission_id ?? permission.permissionId)
+    .filter(permissionId => permissionId !== undefined && permissionId !== null && permissionId !== '')
+    .map(permissionId => Number(permissionId))
+    .filter(permissionId => Number.isFinite(permissionId) && permissionId > 0);
 }
 
 function renderUserPermissionOptions(selectedUserId = null) {
   userPermissionsContainer.innerHTML = "";
   const selectedIds = new Set(getUserPermissionIds(selectedUserId));
   const categories = {};
+  const permissionsList = normalizeResponseArray(allPermissions);
 
-  allPermissions.forEach(permission => {
+  permissionsList.forEach(permission => {
     const category = permission.category || "Outro";
     if (!categories[category]) categories[category] = [];
     categories[category].push(permission);
@@ -490,6 +507,10 @@ function updateUserPermissionCount() {
 async function openUserModal(editId = null) {
   editingUserId = editId;
   userFormError.textContent = "";
+
+  if (!Array.isArray(allPermissions) || allPermissions.length === 0) {
+    await loadPermissions();
+  }
 
   if (editId) {
     const user = users.find(u => u.id === editId);
@@ -1497,7 +1518,7 @@ function openEventModal(editId = null, prefillDate = null) {
       eventTitle.value = ev.title || "";
       eventDate.value  = ev.date;
       eventTime.value  = ev.time || "";
-      eventType.value  = ["saida","entrega"].includes(ev.type) ? ev.type : "saida";
+      eventType.value  = ev.type === "entrega" ? "entrega" : "entrega";
       eventCar.value   = ev.carId || "";
       eventVendor.value = ev.vendor || "";
       eventClient.value = ev.client || "";
@@ -1507,7 +1528,7 @@ function openEventModal(editId = null, prefillDate = null) {
     eventTitle.value = "";
     eventDate.value  = prefillDate || new Date().toISOString().slice(0,10);
     eventTime.value  = "";
-    eventType.value  = "saida";
+    eventType.value  = "entrega";
     eventCar.value   = "";
     eventVendor.value = "";
     eventClient.value = "";

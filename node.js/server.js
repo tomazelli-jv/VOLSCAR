@@ -7,7 +7,7 @@
   const jwt = require('jsonwebtoken');
   const path = require('path');
   const pool = require('./config/database');
-  const { validateUserPayload } = require('./utils/userValidation');
+  const { normalizePermissionIds, validateUserPayload } = require('./utils/userValidation');
 
   console.log('DB_HOST:', process.env.DB_HOST);
 
@@ -61,6 +61,15 @@
     });
   };
 
+  async function userHasStatusColumn() {
+    try {
+      const [rows] = await pool.execute("SHOW COLUMNS FROM users LIKE 'status'");
+      return rows.length > 0;
+    } catch (error) {
+      return false;
+    }
+  }
+
   // =======================================
   // LOGIN
   // =======================================
@@ -100,18 +109,24 @@
         });
       }
       
-      const [permissions] = await pool.execute(`
-      SELECT
-          p.id,
-          p.name,
-          p.description,
-          p.category
-      FROM user_permissions up
-      INNER JOIN permissions p
-          ON p.id = up.permission_id
-      WHERE up.user_id = ?
-      ORDER BY p.category, p.name
-  `, [user.id]);
+      let permissions = [];
+      try {
+        [permissions] = await pool.execute(`
+          SELECT
+              p.id,
+              p.name,
+              p.description,
+              p.category
+          FROM user_permissions up
+          INNER JOIN permissions p
+              ON p.id = up.permission_id
+          WHERE up.user_id = ?
+          ORDER BY p.category, p.name
+        `, [user.id]);
+      } catch (error) {
+        console.warn('Could not load permissions for user:', error.message);
+        permissions = [];
+      }
 
       console.log("ANTES DO JWT");
 
@@ -760,17 +775,22 @@ Saída prevista: ${finalScheduledDeparture || '-'}
   app.get('/api/users', authenticateToken, async (req, res) => {
     try {
 
+      const hasStatusColumn = await userHasStatusColumn();
       const [users] = await pool.execute(`
         SELECT
           id,
           username,
-          role,
-          status
+          role${hasStatusColumn ? ', status' : ''}
         FROM users
         ORDER BY username
       `);
 
-      res.json(users);
+      const normalizedUsers = (users || []).map(user => ({
+        ...user,
+        status: user.status || 'active'
+      }));
+
+      res.json(normalizedUsers);
 
     } catch (error) {
 
@@ -791,18 +811,24 @@ Saída prevista: ${finalScheduledDeparture || '-'}
 
       const { id } = req.params;
 
-      const [permissions] = await pool.execute(`
-        SELECT
-          p.id,
-          p.name,
-          p.description,
-          p.category
-        FROM user_permissions up
-        INNER JOIN permissions p
-          ON p.id = up.permission_id
-        WHERE up.user_id = ?
-        ORDER BY p.category, p.name
-      `, [id]);
+      let permissions = [];
+      try {
+        [permissions] = await pool.execute(`
+          SELECT
+            p.id,
+            p.name,
+            p.description,
+            p.category
+          FROM user_permissions up
+          INNER JOIN permissions p
+            ON p.id = up.permission_id
+          WHERE up.user_id = ?
+          ORDER BY p.category, p.name
+        `, [id]);
+      } catch (error) {
+        console.warn('Could not load permissions for user:', error.message);
+        permissions = [];
+      }
 
       res.json(permissions);
 
@@ -891,6 +917,8 @@ Saída prevista: ${finalScheduledDeparture || '-'}
         permissions = []
       } = req.body;
 
+      const normalizedPermissions = normalizePermissionIds(Array.isArray(permissions) ? permissions : []);
+
       if (!username || !password) {
         return res.status(400).json({
           error: 'Usuário e senha são obrigatórios'
@@ -916,41 +944,50 @@ Saída prevista: ${finalScheduledDeparture || '-'}
 
       // Criptografa a senha
       const hash = await bcrypt.hash(password, 10);
+      const hasStatusColumn = await userHasStatusColumn();
 
       // Cria o usuário
-      const [result] = await pool.execute(
-        `
-        INSERT INTO users
-        (
-          username,
-          password,
-          role,
-          status
-        )
-        VALUES (?, ?, ?, ?)
-        `,
-        [
-          username,
-          hash,
-          role || 'user',
-          status || 'active'
-        ]
-      );
+      const [result] = hasStatusColumn
+        ? await pool.execute(
+            `
+            INSERT INTO users
+            (
+              username,
+              password,
+              role,
+              status
+            )
+            VALUES (?, ?, ?, ?)
+            `,
+            [
+              username,
+              hash,
+              role || 'user',
+              status || 'active'
+            ]
+          )
+        : await pool.execute(
+            `
+            INSERT INTO users
+            (
+              username,
+              password,
+              role
+            )
+            VALUES (?, ?, ?)
+            `,
+            [
+              username,
+              hash,
+              role || 'user'
+            ]
+          );
 
       const userId = result.insertId;
 
       // Salva permissões
-      if (Array.isArray(permissions)) {
-
-        for (const permission of permissions) {
-
-          const permissionId =
-            typeof permission === 'object'
-              ? permission.id
-              : permission;
-
-          if (!permissionId) continue;
-
+      if (normalizedPermissions.length) {
+        for (const permissionId of normalizedPermissions) {
           await pool.execute(
             `
             INSERT INTO user_permissions
@@ -1001,6 +1038,8 @@ Saída prevista: ${finalScheduledDeparture || '-'}
         permissions = []
       } = req.body;
 
+      const normalizedPermissions = normalizePermissionIds(Array.isArray(permissions) ? permissions : []);
+
       if (!username) {
         return res.status(400).json({
           error: 'Usuário é obrigatório'
@@ -1032,23 +1071,42 @@ Saída prevista: ${finalScheduledDeparture || '-'}
         });
       }
 
+      const hasStatusColumn = await userHasStatusColumn();
+
       // Atualiza usuário
-      await pool.execute(
-        `
-        UPDATE users
-        SET
-          username = ?,
-          role = ?,
-          status = ?
-        WHERE id = ?
-        `,
-        [
-          username,
-          role,
-          status || 'active',
-          id
-        ]
-      );
+      if (hasStatusColumn) {
+        await pool.execute(
+          `
+          UPDATE users
+          SET
+            username = ?,
+            role = ?,
+            status = ?
+          WHERE id = ?
+          `,
+          [
+            username,
+            role,
+            status || 'active',
+            id
+          ]
+        );
+      } else {
+        await pool.execute(
+          `
+          UPDATE users
+          SET
+            username = ?,
+            role = ?
+          WHERE id = ?
+          `,
+          [
+            username,
+            role,
+            id
+          ]
+        );
+      }
 
       // Remove permissões atuais
       await pool.execute(
@@ -1060,17 +1118,8 @@ Saída prevista: ${finalScheduledDeparture || '-'}
       );
 
       // Insere novamente
-      if (Array.isArray(permissions)) {
-
-        for (const permission of permissions) {
-
-          const permissionId =
-            typeof permission === 'object'
-              ? permission.id
-              : permission;
-
-          if (!permissionId) continue;
-
+      if (normalizedPermissions.length) {
+        for (const permissionId of normalizedPermissions) {
           await pool.execute(
             `
             INSERT INTO user_permissions
@@ -1086,7 +1135,6 @@ Saída prevista: ${finalScheduledDeparture || '-'}
             ]
           );
         }
-
       }
 
       res.json({

@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { validateUserPayload } = require('../utils/userValidation');
+const { normalizePermissionIds, validateUserPayload } = require('../utils/userValidation');
 
 test('rejects create/edit payloads without permissions', () => {
   const result = validateUserPayload({
@@ -27,4 +27,10 @@ test('accepts payloads when at least one permission is selected', () => {
 
   assert.equal(result.valid, true);
   assert.equal(result.error, null);
+});
+
+test('normalizes permission payloads from objects and arrays', () => {
+  const normalized = normalizePermissionIds([{ id: 2 }, { permission_id: 4 }, 7]);
+
+  assert.deepEqual(normalized, [2, 4, 7]);
 });
