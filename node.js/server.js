@@ -170,7 +170,7 @@
           plate,
           chassis,
           DATE_FORMAT(arrival_date, '%Y-%m-%d') AS arrivalDate,
-          DATE_FORMAT(scheduled_departure, '%Y-%m-%d') AS finalScheduledDeparture,
+          DATE_FORMAT(scheduled_departure, '%Y-%m-%d') AS scheduledDeparture,
           DATE_FORMAT(departure_date, '%Y-%m-%d') AS departureDate
         FROM cars
         ORDER BY id DESC
@@ -201,7 +201,7 @@
         plate,
         chassis,
         arrivalDate,
-        finalScheduledDeparture
+        scheduledDeparture
       } = req.body;
 
       const [result] = await pool.execute(
@@ -223,14 +223,14 @@
       plate,
       chassis,
       arrivalDate || null,
-      finalScheduledDeparture || null
+      scheduledDeparture || null
     ]
   );
 
   const carId = result.insertId;
 
   // Cria evento automático de saída
-  if (finalScheduledDeparture) {
+  if (scheduledDeparture) {
 
     await pool.execute(
       `
@@ -252,23 +252,23 @@
       [
       carId,
       'saida',
-      `🚗 ${finalName}`,
-      finalScheduledDeparture,
+      `🚗 ${name}`,
+      scheduledDeparture,
       '08:00',
       '',
       '',
       `
-Veículo: ${finalName}
+Veículo: ${name}
 
-Modelo: ${finalModel}
+Modelo: ${model}
 
-Placa: ${finalPlate}
+Placa: ${plate}
 
-Chassi: ${finalChassis}
+Chassi: ${chassis}
 
-Entrada: ${finalArrivalDate || '-'}
+Entrada: ${arrivalDate || '-'}
 
-Saída prevista: ${finalScheduledDeparture || '-'}
+Saída prevista: ${scheduledDeparture || '-'}
   `,
       'system',
       carId
@@ -301,45 +301,46 @@ Saída prevista: ${finalScheduledDeparture || '-'}
       const { id } = req.params;
 
       // Busca o veículo atual
-const [rows] = await pool.execute(
-  `
-  SELECT
-    name,
-    model,
-    plate,
-    chassis,
-    arrival_date,
-    scheduled_departure,
-    departure_date
-  FROM cars
-  WHERE id = ?
-  `,
-  [id]
-);
+      const [rows] = await pool.execute(
+        `
+        SELECT
+          name,
+          model,
+          plate,
+          chassis,
+          arrival_date,
+          scheduled_departure,
+          departure_date
+        FROM cars
+        WHERE id = ?
+        `,
+        [id]
+      );
 
-if (!rows.length) {
-  return res.status(404).json({
-    error: 'Veículo não encontrado'
-  });
-}
+      if (!rows.length) {
+        return res.status(404).json({
+          error: 'Veículo não encontrado'
+        });
+      }
 
-const currentCar = rows[0];
-const finalName = name ?? currentCar.name;
-const finalModel = model ?? currentCar.model;
-const finalPlate = plate ?? currentCar.plate;
-const finalChassis = chassis ?? currentCar.chassis;
-const finalArrivalDate = arrivalDate ?? currentCar.arrival_date;
-const finalScheduledDeparture = finalScheduledDeparture ?? currentCar.scheduled_departure;
-const finalDepartureDate = departureDate ?? currentCar.departure_date;
-
+      const currentCar = rows[0];
       const {
         name,
         model,
         plate,
         chassis,
         arrivalDate,
+        scheduledDeparture,
         departureDate
       } = req.body;
+
+      const finalName = name ?? currentCar.name;
+      const finalModel = model ?? currentCar.model;
+      const finalPlate = plate ?? currentCar.plate;
+      const finalChassis = chassis ?? currentCar.chassis;
+      const finalArrivalDate = arrivalDate ?? currentCar.arrival_date;
+      const finalScheduledDeparture = scheduledDeparture ?? currentCar.scheduled_departure;
+      const finalDepartureDate = departureDate ?? currentCar.departure_date;
 
       await pool.execute(
   `
@@ -361,7 +362,7 @@ const finalDepartureDate = departureDate ?? currentCar.departure_date;
     chassis ?? currentCar.chassis,
     arrivalDate ?? currentCar.arrival_date,
     finalScheduledDeparture ?? currentCar.scheduled_departure,
-    departureDate ?? currentCar.departure_date,
+    finalDepartureDate ?? currentCar.departure_date,
     id
   ]
 
@@ -411,7 +412,7 @@ Chassi: ${finalChassis}
 
 Entrada: ${finalArrivalDate || '-'}
 
-Saída prevista: ${finalScheduledDeparture || '-'}}
+Saída prevista: ${finalScheduledDeparture || '-'}
   `,
       eventRows[0].id
   ]
