@@ -455,6 +455,57 @@ function getUserPermissionIds(userId = null) {
     .filter(permissionId => Number.isFinite(permissionId) && permissionId > 0);
 }
 
+const PERMISSION_DISPLAY = {
+  view_cars: {
+    title: 'Ver veículos',
+    description: 'Acessar a listagem de veículos disponíveis.'
+  },
+  add_car: {
+    title: 'Adicionar veículos',
+    description: 'Incluir um novo veículo no estoque.'
+  },
+  edit_car: {
+    title: 'Editar veículos',
+    description: 'Alterar dados do veículo cadastrado.'
+  },
+  delete_car: {
+    title: 'Apagar veículos',
+    description: 'Remover um veículo do sistema.'
+  },
+  view_events: {
+    title: 'Ver agenda',
+    description: 'Acessar o calendário e visualizar eventos.'
+  },
+  add_event: {
+    title: 'Adicionar eventos',
+    description: 'Criar novos registros de evento na agenda.'
+  },
+  edit_event: {
+    title: 'Editar eventos',
+    description: 'Alterar detalhes de eventos agendados.'
+  },
+  delete_event: {
+    title: 'Apagar eventos',
+    description: 'Excluir um evento agendado.'
+  },
+  view_dashboard: {
+    title: 'Ver dashboard',
+    description: 'Acessar o painel de indicadores da frota.'
+  },
+  manage_users: {
+    title: 'Gerenciar usuários',
+    description: 'Criar e editar contas de usuários.'
+  },
+  manage_permissions: {
+    title: 'Gerenciar permissões',
+    description: 'Controlar quais ações cada usuário pode executar.'
+  },
+  view_reports: {
+    title: 'Ver relatórios',
+    description: 'Acessar relatórios e dados resumidos.'
+  }
+};
+
 function renderUserPermissionOptions(selectedUserId = null) {
   userPermissionsContainer.innerHTML = "";
   const selectedIds = new Set(getUserPermissionIds(selectedUserId));
@@ -485,8 +536,13 @@ function renderUserPermissionOptions(selectedUserId = null) {
       checkbox.checked = selectedIds.has(permission.id);
       checkbox.addEventListener("change", updateUserPermissionCount);
 
+      const meta = PERMISSION_DISPLAY[permission.name] || {
+        title: permission.name.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()),
+        description: permission.description || ''
+      };
+
       const text = document.createElement("div");
-      text.innerHTML = `<strong>${permission.name}</strong><div>${permission.description || ""}</div>`;
+      text.innerHTML = `<strong>${meta.title}</strong><div>${meta.description}</div>`;
 
       label.appendChild(checkbox);
       label.appendChild(text);

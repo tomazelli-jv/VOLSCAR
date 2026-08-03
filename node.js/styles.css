@@ -969,14 +969,16 @@ td {
 
 .user-permissions-grid {
   display: grid;
-  gap: 12px;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .user-permissions-category {
   background: white;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: 14px;
+  padding: 18px;
+  min-width: 0;
 }
 
 .user-permissions-category h4 {
@@ -1054,6 +1056,34 @@ td {
 .modal-top {
   background: var(--vw-blue);
   padding: 22px 28px;
+}
+
+.modal-content--user {
+  width: min(980px, 98vw);
+  max-height: 92vh;
+}
+
+.modal-content--user .modal-body {
+  max-height: calc(92vh - 92px);
+  overflow-y: auto;
+}
+
+.modal-content--user .modal-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.modal-content--user .modal-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.modal-content--user .modal-actions button {
+  min-width: 140px;
+}
+
+.modal-content--user .modal-full-width {
+  grid-column: 1 / -1;
 }
 
 .modal-top h2 {
