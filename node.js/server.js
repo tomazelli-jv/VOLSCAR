@@ -61,6 +61,62 @@
     });
   };
 
+
+// =====================================================//
+// PERMISSION MIDDLEWARE - ADICIONADO 04-08-2026 - TOMAZ//
+// =====================================================//
+
+const requirePermission = (permissionName) => {
+
+  return async (req, res, next) => {
+
+    try {
+
+      // Administrador sempre possui acesso
+      if (req.user.role === 'admin') {
+        return next();
+      }
+
+      const [rows] = await pool.execute(
+        `
+        SELECT 1
+        FROM user_permissions up
+        INNER JOIN permissions p
+          ON p.id = up.permission_id
+        WHERE up.user_id = ?
+          AND p.name = ?
+        LIMIT 1
+        `,
+        [
+          req.user.id,
+          permissionName
+        ]
+      );
+
+      if (!rows.length) {
+        return res.status(403).json({
+          error: 'VOCÊ NÃO TEM PERMISSÃO PARA ACESSAR ESTA ÁREA!'
+        });
+      }
+
+      next();
+
+    } catch (error) {
+
+      console.error(error);
+
+      return res.status(500).json({
+        error: 'Erro ao validar permissões.'
+      });
+
+    }
+
+  };
+
+};
+
+
+
   async function userHasStatusColumn() {
     try {
       const [rows] = await pool.execute("SHOW COLUMNS FROM users LIKE 'status'");
