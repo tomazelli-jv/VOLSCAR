@@ -183,9 +183,29 @@ function getRolePermissions(role) {
   return ["view"];
 }
 
-function canAdd() { return currentUser && getRolePermissions(currentUser.role).includes("add"); }
-function canEdit() { return currentUser && getRolePermissions(currentUser.role).includes("edit"); }
-function canDelete() { return currentUser && getRolePermissions(currentUser.role).includes("delete"); }
+function canAdd(module = "cars") {
+
+  if (!currentUser) return false;
+
+  return hasPermission(`create_${module}`);
+
+}
+
+function canEdit(module = "cars") {
+
+  if (!currentUser) return false;
+
+  return hasPermission(`edit_${module}`);
+
+}
+
+function canDelete(module = "cars") {
+
+  if (!currentUser) return false;
+
+  return hasPermission(`delete_${module}`);
+
+}
 
 async function loadCars() {
   try {
@@ -696,7 +716,70 @@ function clearAppMessage() {
 }
 
 function updatePermissionUI() {
-  newCarButton.style.display = canAdd() ? "inline-flex" : "none";
+
+  // Botão Novo Veículo
+  newCarButton.style.display = hasPermission("create_cars")
+    ? "inline-flex"
+    : "none";
+
+  // Permissões das abas
+  const permissionMap = {
+    consulta: "view_cars",
+    agenda: "view_events",
+    dashboard: "view_dashboard",
+    settings: "manage_settings"
+  };
+
+  let firstAllowedTab = null;
+
+  tabButtons.forEach(button => {
+
+    const permission = permissionMap[button.dataset.tab];
+
+    if (!permission) return;
+
+    const allowed = hasPermission(permission);
+
+    button.style.display = allowed ? "" : "none";
+
+    if (allowed && !firstAllowedTab) {
+      firstAllowedTab = button.dataset.tab;
+    }
+
+  });
+
+  // Se a aba atual ficou sem permissão,
+  // muda automaticamente para a primeira permitida.
+  const currentPermission = permissionMap[activeTabName];
+
+  if (
+    currentPermission &&
+    !hasPermission(currentPermission)
+  ) {
+
+    if (firstAllowedTab) {
+
+      activeTabName = firstAllowedTab;
+
+    } else {
+
+      activeTabName = null;
+
+      inventoryPanel.classList.add("hidden");
+      dashboardPanel.classList.add("hidden");
+      agendaPanel.classList.add("hidden");
+      settingsPanel.classList.add("hidden");
+
+      showAppMessage(
+        "SUA CONTA NÃO POSSUI PERMISSÃO PARA ACESSAR NENHUM MÓDULO DO SISTEMA."
+      );
+
+      return;
+
+    }
+
+  }
+
 }
 
 //==================================//
@@ -1353,8 +1436,11 @@ await Promise.all(adminPromises);
     renderUsersTable();
   }
 
-  clearAppMessage();
+clearAppMessage();
+
+if (activeTabName) {
   setActiveTab(activeTabName);
+}
 }
 
 /* ==========================================================
