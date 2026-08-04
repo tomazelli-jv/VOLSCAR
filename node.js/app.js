@@ -194,9 +194,14 @@ async function loadCars() {
       cars = await response.json();
     } else {
       cars = [];
-      if (response.status === 401 || response.status === 403) {
-        clearAuth();
-      }
+     if (response.status === 401) {
+    clearAuth();
+    return;
+}
+
+if (response.status === 403) {
+    throw new Error("VOCÊ NÃO TEM PERMISSÃO PARA ACESSAR ESTA ÁREA!");
+}
     }
   } catch (error) {
     console.error('Error loading cars:', error);
@@ -278,9 +283,14 @@ async function loadEvents() {
       events = await response.json();
     } else {
       events = [];
-      if (response.status === 401 || response.status === 403) {
-        clearAuth();
-      }
+      if (response.status === 401) {
+    clearAuth();
+    return;
+}
+
+if (response.status === 403) {
+    throw new Error("VOCÊ NÃO TEM PERMISSÃO PARA ACESSAR ESTA ÁREA!");
+}
     }
   } catch (error) {
     console.error('Error loading events:', error);

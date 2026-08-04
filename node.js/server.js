@@ -231,11 +231,7 @@ const requirePermission = (permissionName) => {
   // GET ALL CARS
   // =======================================
 
-  app.get(
-  '/api/cars',
-  authenticateToken,
-  requirePermission('view_cars'),
-  async (req, res) => {
+  app.get( '/api/cars', authenticateToken, async (req, res) => {
     try {
 
       const [cars] = await pool.execute(`
