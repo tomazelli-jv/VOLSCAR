@@ -1678,6 +1678,9 @@ function openDayModal(dateStr, dayEvs) {
   dayModalTitle.textContent = label.charAt(0).toUpperCase() + label.slice(1);
 
   dayModalBody.innerHTML = "";
+  const canCreateEvents = canCreate("events");
+  const canEditEvents = canEdit("events");
+  const canDeleteEvents = canDelete("events");
 
   if (dayEvs.length === 0) {
     dayModalBody.innerHTML = `<p class="day-no-events">Nenhum evento neste dia. Clique em "+ Adicionar evento" para criar.</p>`;
@@ -1705,15 +1708,35 @@ function openDayModal(dateStr, dayEvs) {
 
       const editBtn = document.createElement("button");
       editBtn.className = "actions"; // reutiliza estilos
-      const eb = document.createElement("button");
-      eb.className = "edit"; eb.textContent = "Editar";
-      eb.onclick = () => { closeDayModalFn(); openEventModal(ev.id); };
-      acts.appendChild(eb);
+    if (canEditEvents) {
 
-      const db = document.createElement("button");
-      db.className = "delete"; db.textContent = "Excluir";
-      db.onclick = () => { deleteEvent(ev.id); closeDayModalFn(); };
-      acts.appendChild(db);
+  const eb = document.createElement("button");
+  eb.className = "edit";
+  eb.textContent = "Editar";
+
+  eb.onclick = () => {
+    closeDayModalFn();
+    openEventModal(ev.id);
+  };
+
+  acts.appendChild(eb);
+
+}
+
+     if (canDeleteEvents) {
+
+  const db = document.createElement("button");
+  db.className = "delete";
+  db.textContent = "Excluir";
+
+  db.onclick = () => {
+    deleteEvent(ev.id);
+    closeDayModalFn();
+  };
+
+  acts.appendChild(db);
+
+}
 
       dayModalBody.appendChild(item);
     });
@@ -1752,50 +1775,92 @@ function populateEventCarSelect(selectedCarId = null) {
 }
 
 function openEventModal(editId = null, prefillDate = null) {
+
+  // Editando
+  if (editId && !canEdit("events")) {
+    showAppMessage("VOCÊ NÃO TEM PERMISSÃO PARA ACESSAR ESTA ÁREA!");
+    return;
+  }
+
+  // Criando
+  if (!editId && !canCreate("events")) {
+    showAppMessage("VOCÊ NÃO TEM PERMISSÃO PARA ACESSAR ESTA ÁREA!");
+    return;
+  }
+
   editingEventId = editId;
-  const selectedCarId = editId ? (events.find(e => e.id === editId)?.carId || null) : null;
+
+  const selectedCarId = editId
+    ? (events.find(e => e.id === editId)?.carId || null)
+    : null;
+
   populateEventCarSelect(selectedCarId);
-  eventModalTitle.textContent = editId ? "Editar Evento" : "Novo Evento";
+
+  eventModalTitle.textContent = editId
+    ? "Editar Evento"
+    : "Novo Evento";
+
   eventDateFixed = !!prefillDate;
 
   if (editId) {
+
     const ev = events.find(e => e.id === editId);
+
     if (ev) {
-      eventTitle.value = ev.title || "";
-      eventDate.value  = ev.date;
-      eventTime.value  = ev.time || "";
-      eventType.value  = ev.type === "entrega" ? "entrega" : "entrega";
-      eventCar.value   = ev.carId || "";
-      eventVendor.value = ev.vendor || "";
-      eventClient.value = ev.client || "";
-      eventNote.value  = ev.note || "";
+      eventTitle.value   = ev.title || "";
+      eventDate.value    = ev.date;
+      eventTime.value    = ev.time || "";
+      eventType.value    = ev.type || "entrega";
+      eventCar.value     = ev.carId || "";
+      eventVendor.value  = ev.vendor || "";
+      eventClient.value  = ev.client || "";
+      eventNote.value    = ev.note || "";
     }
+
   } else {
-    eventTitle.value = "";
-    eventDate.value  = prefillDate || new Date().toISOString().slice(0,10);
-    eventTime.value  = "";
-    eventType.value  = "entrega";
-    eventCar.value   = "";
-    eventVendor.value = "";
-    eventClient.value = "";
-    eventNote.value  = "";
+
+    eventTitle.value   = "";
+    eventDate.value    = prefillDate || new Date().toISOString().slice(0, 10);
+    eventTime.value    = "";
+    eventType.value    = "entrega";
+    eventCar.value     = "";
+    eventVendor.value  = "";
+    eventClient.value  = "";
+    eventNote.value    = "";
+
   }
 
   eventDate.disabled = eventDateFixed;
   eventModal.classList.remove("hidden");
+
 }
 
 function closeEventModalFn() { eventModal.classList.add("hidden"); editingEventId = null; eventDate.disabled = false; eventDateFixed = false; }
 
 async function deleteEvent(id) {
-  if (!confirm("Excluir este evento?")) return;
+
+  if (!canDelete("events")) {
+    showAppMessage("VOCÊ NÃO TEM PERMISSÃO PARA ACESSAR ESTA ÁREA!");
+    return;
+  }
+
+  if (!confirm("Excluir este evento?")) {
+    return;
+  }
+
   try {
+
     await deleteEventData(id);
     await refreshAppData();
+
   } catch (error) {
-    console.error('Error deleting event:', error);
-    alert('Erro ao excluir evento');
+
+    console.error("Error deleting event:", error);
+
+    showAppMessage(error.message || "Erro ao excluir evento");
+
   }
+
 }
 
 /* ==========================================================
@@ -2025,17 +2090,37 @@ eventForm.addEventListener("submit", async e => {
   }
 
   try {
-    if (editingEventId) {
-      await updateEventData(editingEventId, evData);
-    } else {
-      await createEvent(evData);
+
+  if (editingEventId) {
+
+    if (!canEdit("events")) {
+      showAppMessage("VOCÊ NÃO TEM PERMISSÃO PARA ACESSAR ESTA ÁREA!");
+      return;
     }
-    await refreshAppData();
-    closeEventModalFn();
-  } catch (error) {
-    console.error('Error saving event:', error);
-    alert(error.message || 'Erro ao salvar evento');
+
+    await updateEventData(editingEventId, evData);
+
+  } else {
+
+    if (!canCreate("events")) {
+      showAppMessage("VOCÊ NÃO TEM PERMISSÃO PARA ACESSAR ESTA ÁREA!");
+      return;
+    }
+
+    await createEvent(evData);
+
   }
+
+  await refreshAppData();
+  closeEventModalFn();
+
+} catch (error) {
+
+  console.error("Error saving event:", error);
+
+  showAppMessage(error.message || "Erro ao salvar evento");
+
+}
 });
 
 window.addEventListener("click", e => {

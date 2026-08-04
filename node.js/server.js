@@ -608,7 +608,10 @@ Saída prevista: ${finalScheduledDeparture || '-'}
   // GET EVENTS
   // =======================================
 
-  app.get('/api/events', authenticateToken, async (req, res) => {
+ app.get(
+  '/api/events',
+  authenticateToken,
+  requirePermission('view_events'), async (req, res) => {
     try {
 
       const [events] = await pool.execute(`
@@ -642,7 +645,10 @@ Saída prevista: ${finalScheduledDeparture || '-'}
   // ADD EVENT
   // =======================================
 
-  app.post('/api/events', authenticateToken, async (req, res) => {
+  app.post(
+  '/api/events',
+  authenticateToken,
+  requirePermission('create_events'), async (req, res) => {
     try {
 
       const {
@@ -701,7 +707,10 @@ Saída prevista: ${finalScheduledDeparture || '-'}
   // UPDATE EVENT
   // =======================================
 
-  app.put('/api/events/:id', authenticateToken, async (req, res) => {
+ app.put(
+  '/api/events/:id',
+  authenticateToken,
+  requirePermission('edit_events'), async (req, res) => {
     try {
 
       const { id } = req.params;
@@ -762,7 +771,10 @@ Saída prevista: ${finalScheduledDeparture || '-'}
   // DELETE EVENT
   // =======================================
 
-  app.delete('/api/events/:id', authenticateToken, async (req, res) => {
+ app.delete(
+  '/api/events/:id',
+  authenticateToken,
+  requirePermission('delete_events'), async (req, res) => {
     try {
 
     const { id } = req.params;
