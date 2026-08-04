@@ -699,15 +699,49 @@ function updatePermissionUI() {
   newCarButton.style.display = canAdd() ? "inline-flex" : "none";
 }
 
+//==================================//
+//ALTERAÇÃO FEITA 04-08-2026 - TOMAZ//
+//==================================//
+
 function setActiveTab(tabName) {
+
+  // Verificação de permissões
+  const permissions = {
+    dashboard: "view_dashboard",
+    consulta: "view_cars",
+    agenda: "view_events",
+    settings: "manage_settings"
+  };
+
+  const requiredPermission = permissions[tabName];
+
+ if (requiredPermission && !hasPermission(requiredPermission)) {
+
+  showAppMessage(
+    "VOCÊ NÃO TEM PERMISSÃO PARA ACESSAR ESTA ÁREA!"
+  );
+
+  return;
+}
+
   activeTabName = tabName;
+
   inventoryPanel.classList.toggle("hidden", tabName !== "consulta");
   dashboardPanel.classList.toggle("hidden", tabName !== "dashboard");
-  agendaPanel.classList.toggle("hidden",    tabName !== "agenda");
-  settingsPanel.classList.toggle("hidden",  tabName !== "settings");
-  tabButtons.forEach(b => b.classList.toggle("active", b.dataset.tab === tabName));
-  if (tabName === "dashboard") updateDashboard();
-  if (tabName === "agenda")    renderCalendar();
+  agendaPanel.classList.toggle("hidden", tabName !== "agenda");
+  settingsPanel.classList.toggle("hidden", tabName !== "settings");
+
+  tabButtons.forEach(button =>
+    button.classList.toggle("active", button.dataset.tab === tabName)
+  );
+
+  if (tabName === "dashboard") {
+    updateDashboard();
+  }
+
+  if (tabName === "agenda") {
+    renderCalendar();
+  }
 }
 
 function formatDateTime(str) {
@@ -1278,11 +1312,37 @@ async function refreshAppData() {
   userRoleBadge.textContent = currentUser.role;
   updatePermissionUI();
 
-  await Promise.all([loadCars(), loadEvents()]);
+ const promises = [];
 
-  if (currentUser.role === 'admin') {
-    await Promise.all([loadUsers(), loadPermissions()]);
-  }
+if (hasPermission('view_cars')) {
+  promises.push(loadCars());
+} else {
+  cars = [];
+}
+
+if (hasPermission('view_events')) {
+  promises.push(loadEvents());
+} else {
+  events = [];
+}
+
+await Promise.all(promises);
+
+const adminPromises = [];
+
+if (hasPermission('view_users')) {
+  adminPromises.push(loadUsers());
+} else {
+  users = [];
+}
+
+if (hasPermission('manage_settings')) {
+  adminPromises.push(loadPermissions());
+} else {
+  allPermissions = [];
+}
+
+await Promise.all(adminPromises);
 
   renderCarsTable();
   renderCalendar();
