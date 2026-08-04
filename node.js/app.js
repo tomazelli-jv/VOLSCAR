@@ -718,7 +718,7 @@ function clearAppMessage() {
 function updatePermissionUI() {
 
   // Botão Novo Veículo
-  newCarButton.style.display = hasPermission("create_cars")
+  newCarButton.style.display = canCreate("cars")
     ? "inline-flex"
     : "none";
 
@@ -990,28 +990,47 @@ function handleSettingsPermissionChange(event) {
    MODAL VEÍCULO
    ========================================================== */
 function openModal(editId = null) {
+
+  // Editando
+  if (editId && !canEdit("cars")) {
+    showAppMessage("VOCÊ NÃO TEM PERMISSÃO PARA ACESSAR ESTA ÁREA!");
+    return;
+  }
+
+  // Criando
+  if (!editId && !canCreate("cars")) {
+    showAppMessage("VOCÊ NÃO TEM PERMISSÃO PARA ACESSAR ESTA ÁREA!");
+    return;
+  }
+
   editingId = editId;
   carModal.classList.remove("hidden");
+
   if (editingId) {
     const car = cars.find(c => c.id === editingId);
+
     if (car) {
-      modalTitle.textContent          = "Editar veículo";
-      carName.value                   = car.name;
-      carModel.value                  = car.model;
-      carPlate.value                  = car.plate;
-      carChassis.value                = car.chassis;
-      carArrival.value                = car.arrivalDate;
-      carScheduledDeparture.value     = car.scheduledDeparture || "";
+      modalTitle.textContent      = "Editar veículo";
+      carName.value               = car.name;
+      carModel.value              = car.model;
+      carPlate.value              = car.plate;
+      carChassis.value            = car.chassis;
+      carArrival.value            = car.arrivalDate;
+      carScheduledDeparture.value = car.scheduledDeparture || "";
     }
+
   } else {
-    modalTitle.textContent            = "Registrar chegada";
-    carName.value                     = "";
-    carModel.value                    = "";
-    carPlate.value                    = "";
-    carChassis.value                  = "";
-    carArrival.value                  = new Date().toISOString().slice(0, 16);
-    carScheduledDeparture.value       = "";
+
+    modalTitle.textContent      = "Registrar chegada";
+    carName.value               = "";
+    carModel.value              = "";
+    carPlate.value              = "";
+    carChassis.value            = "";
+    carArrival.value            = new Date().toISOString().slice(0, 16);
+    carScheduledDeparture.value = "";
+
   }
+
 }
 
 function closeModalWindow() { carModal.classList.add("hidden"); editingId = null; }
@@ -1063,8 +1082,8 @@ function renderCarsTable() {
   const carsCards = document.getElementById("carsCards");
   carsCards.innerHTML = "";
   const filtered  = getFilteredCars();
-  const canEditFlag   = canEdit();
-  const canDeleteFlag = canDelete();
+  const canEditFlag   = canEdit("cars");
+  const canDeleteFlag = canDelete("cars");
 
   if (filtered.length === 0) {
     carsTableBody.innerHTML = `<tr><td colspan="8" class="empty-row">Nenhum veículo encontrado</td></tr>`;
@@ -1185,14 +1204,29 @@ const inStock = !hasExited;
 }
 
 async function removeCar(id) {
-  if (!confirm("Deseja realmente excluir este veículo?")) return;
+
+  if (!canDelete("cars")) {
+    showAppMessage("VOCÊ NÃO TEM PERMISSÃO PARA ACESSAR ESTA ÁREA!");
+    return;
+  }
+
+  if (!confirm("Deseja realmente excluir este veículo?")) {
+    return;
+  }
+
   try {
+
     await deleteCarData(id);
     await refreshAppData();
+
   } catch (error) {
-    console.error('Error deleting car:', error);
-    alert('Erro ao excluir veículo');
+
+    console.error(error);
+
+    showAppMessage("Erro ao excluir veículo.");
+
   }
+
 }
 
 function closeExitModalWindow() {
@@ -1915,21 +1949,38 @@ carForm.addEventListener("submit", async e => {
     return;
   }
 
-  try {
+ try {
 
-    if (editingId) {
-      await updateCarData(editingId, carData);
-    } else {
-      await createCar(carData);
+  if (editingId) {
+
+    if (!canEdit("cars")) {
+      showAppMessage("VOCÊ NÃO TEM PERMISSÃO PARA ACESSAR ESTA ÁREA!");
+      return;
     }
 
-    await refreshAppData();
-    closeModalWindow();
+    await updateCarData(editingId, carData);
 
-  } catch (error) {
-    console.error("Error saving car:", error);
-    alert(error.message || "Erro ao salvar veículo");
+  } else {
+
+    if (!canCreate("cars")) {
+      showAppMessage("VOCÊ NÃO TEM PERMISSÃO PARA ACESSAR ESTA ÁREA!");
+      return;
+    }
+
+    await createCar(carData);
+
   }
+
+  await refreshAppData();
+  closeModalWindow();
+
+} catch (error) {
+
+  console.error("Error saving car:", error);
+
+  showAppMessage(error.message || "Erro ao salvar veículo");
+
+}
 });
 
 // Agenda

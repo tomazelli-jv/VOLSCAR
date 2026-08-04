@@ -94,9 +94,12 @@ const requirePermission = (permissionName) => {
       );
 
       if (!rows.length) {
-        return res.status(403).json({
-          error: 'VOCÊ NÃO TEM PERMISSÃO PARA ACESSAR ESTA ÁREA!'
-        });
+       return res.status(403).json({
+  success: false,
+  code: "PERMISSION_DENIED",
+  error: "VOCÊ NÃO TEM PERMISSÃO PARA ACESSAR ESTA ÁREA!",
+  permission: permissionName
+});
       }
 
       next();
@@ -231,7 +234,10 @@ const requirePermission = (permissionName) => {
   // GET ALL CARS
   // =======================================
 
-  app.get( '/api/cars', authenticateToken, async (req, res) => {
+  app.get('/api/cars',
+    authenticateToken,
+    requirePermission('view_cars'),
+    async (req, res) => {
     try {
 
       const [cars] = await pool.execute(`
@@ -264,7 +270,10 @@ const requirePermission = (permissionName) => {
   // ADD CAR
   // =======================================
 
-  app.post('/api/cars', authenticateToken, async (req, res) => {
+  app.post('/api/cars',
+    authenticateToken,
+    requirePermission('create_cars'),
+    async (req, res) => {
     try {
 
       const {
@@ -367,7 +376,10 @@ Saída prevista: ${scheduledDeparture || '-'}
   // UPDATE CAR
   // =======================================
 
-  app.put('/api/cars/:id', authenticateToken, async (req, res) => {
+  app.put('/api/cars/:id',
+    authenticateToken,
+    requirePermission('edit_cars'),
+    async (req, res) => {
     try {
 
       const { id } = req.params;
@@ -558,7 +570,10 @@ Saída prevista: ${finalScheduledDeparture || '-'}
   // DELETE CAR
   // =======================================
 
-  app.delete('/api/cars/:id', authenticateToken, async (req, res) => {
+  app.delete('/api/cars/:id',
+    authenticateToken,
+    requirePermission('delete_cars'),
+    async (req, res) => {
     try {
 
       const { id } = req.params;
