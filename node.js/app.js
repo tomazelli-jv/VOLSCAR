@@ -874,10 +874,12 @@ function setActiveTab(tabName) {
 
 function formatDateTime(str) {
   if (!str) return "";
-  return new Date(str).toLocaleString("pt-BR", {
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit"
-  });
+
+  const normalized = str.replace(" ", "T");
+  const [datePart, timePart = "00:00"] = normalized.split("T");
+  const [year, month, day] = datePart.split("-");
+
+  return `${day}/${month}/${year} ${timePart.substring(0, 5)}`;
 }
 
 /* ==========================================================
