@@ -128,7 +128,7 @@ const addEventFromDay   = document.getElementById("addEventFromDay");
 
 /* NOVOS ELEMENTOS PARA NOTIFICAÇÕES */
 const notificationBell       = document.getElementById("notificationBell");
-  const notificationBadge      = document.getElementById("notificationBadge");
+const notificationBadge      = document.getElementById("notificationBadge");
 const upcomingExitsButton    = document.getElementById("upcomingExitsButton");
 const notificationModal      = document.getElementById("notificationModal");
 const closeNotificationModal = document.getElementById("closeNotificationModal");
@@ -136,6 +136,11 @@ const notificationModalBody  = document.getElementById("notificationModalBody");
 const upcomingModal          = document.getElementById("upcomingModal");
 const closeUpcomingModal     = document.getElementById("closeUpcomingModal");
 const upcomingModalBody      = document.getElementById("upcomingModalBody");
+const confirmModal   = document.getElementById("confirmModal");
+const confirmTitle   = document.getElementById("confirmTitle");
+const confirmMessage = document.getElementById("confirmMessage");
+const confirmCancel  = document.getElementById("confirmCancel");
+const confirmOk      = document.getElementById("confirmOk");
 
 /* ── State ── */
 let currentUser        = null;
@@ -536,6 +541,38 @@ const PERMISSION_DISPLAY = {
   }
 };
 
+
+  function showConfirm(title, message) {
+
+    return new Promise(resolve => {
+
+        confirmTitle.textContent = title;
+
+        confirmMessage.innerHTML = message;
+
+        confirmModal.classList.remove("hidden");
+
+        const close = result => {
+
+            confirmModal.classList.add("hidden");
+
+            confirmCancel.onclick = null;
+            confirmOk.onclick = null;
+
+            resolve(result);
+
+        };
+
+        confirmCancel.onclick = () => close(false);
+
+        confirmOk.onclick = () => close(true);
+
+    });
+
+}
+
+
+
 function renderUserPermissionOptions(selectedUserId = null) {
   userPermissionsContainer.innerHTML = "";
   const selectedIds = new Set(getUserPermissionIds(selectedUserId));
@@ -681,7 +718,15 @@ async function removeUser(userId, username) {
     return;
   }
 
-  if (!confirm(`Deseja realmente deletar o usuário "${username}"?`)) return;
+  const ok = await showConfirm(
+
+    "Confirmar exclusão",
+
+    "Deseja realmente excluir este registro?<br><br><strong>Não poderá recuperá-lo caso o faça.</strong>"
+
+);
+
+if (!ok) return;
 
   try {
     await deleteUser(userId);
@@ -1210,9 +1255,15 @@ async function removeCar(id) {
     return;
   }
 
-  if (!confirm("Deseja realmente excluir este veículo?")) {
-    return;
-  }
+ const ok = await showConfirm(
+
+    "Confirmar exclusão",
+
+    "Deseja realmente excluir este registro?<br><br><strong>Não poderá recuperá-lo caso o faça.</strong>"
+
+);
+
+if (!ok) return;
 
   try {
 
