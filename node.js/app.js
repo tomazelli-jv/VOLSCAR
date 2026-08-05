@@ -1670,6 +1670,40 @@ function renderEventsList(year, month) {
   });
 }
 
+
+function canView(module) {
+
+  if (!currentUser) return false;
+
+  return hasPermission(`view_${module}`);
+
+}
+
+function canCreate(module) {
+
+  if (!currentUser) return false;
+
+  return hasPermission(`create_${module}`);
+
+}
+
+function canEdit(module) {
+
+  if (!currentUser) return false;
+
+  return hasPermission(`edit_${module}`);
+
+}
+
+function canDelete(module) {
+
+  if (!currentUser) return false;
+
+  return hasPermission(`delete_${module}`);
+
+}
+
+
 /* ── Modal Dia ── */
 function openDayModal(dateStr, dayEvs) {
   dayModalDate = dateStr;
