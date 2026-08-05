@@ -2152,3 +2152,22 @@ td {
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: 1fr; }
 }
+
+
+.day-event-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
+}
+
+.day-event-item .actions{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    flex-shrink:0;
+}
+
+.day-event-item .actions button{
+    min-width:110px;
+}

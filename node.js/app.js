@@ -1790,6 +1790,7 @@ function openDayModal(dateStr, dayEvs) {
         <div style="display:flex;gap:6px;flex-shrink:0;align-items:flex-start;"></div>
       `;
       const acts = item.querySelector("div:last-child");
+      acts.className = "actions";
 
       const editBtn = document.createElement("button");
       editBtn.className = "actions"; // reutiliza estilos
