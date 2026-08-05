@@ -570,39 +570,58 @@ Saída prevista: ${finalScheduledDeparture || '-'}
   // DELETE CAR
   // =======================================
 
-  app.delete('/api/cars/:id',
-    authenticateToken,
-    requirePermission('delete_cars'),
-    async (req, res) => {
+ app.delete(
+  '/api/cars/:id',
+  authenticateToken,
+  requirePermission('delete_cars'),
+  async (req, res) => {
     try {
 
       const { id } = req.params;
 
-  // Remove todos os eventos automáticos do veículo
-  await pool.execute(
-      `
-      DELETE FROM events
-      WHERE source = 'system'
-        AND source_id = ?
-      `,
-      [id]
-  );
+      // Remove os eventos automáticos do veículo
+      await pool.execute(
+        `
+        DELETE FROM events
+        WHERE source = 'system'
+          AND source_id = ?
+        `,
+        [id]
+      );
 
-  // Remove o veículo
-  await pool.execute(
-      'DELETE FROM cars WHERE id = ?',
-      [id]
-  );
+      // Remove o veículo
+      await pool.execute(
+        'DELETE FROM cars WHERE id = ?',
+        [id]
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: 'Veículo excluído com sucesso.'
+      });
 
     } catch (error) {
 
       console.error(error);
 
-      res.status(500).json({
+      return res.status(500).json({
         error: 'Server error'
       });
+
     }
-  });
+  }
+);
+
+await pool.execute(
+    'DELETE FROM cars WHERE id = ?',
+    [id]
+);
+
+console.log("Veículo excluído:", id);
+
+return res.json({
+    success: true
+});
 
 
   // =======================================
