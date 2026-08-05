@@ -2146,59 +2146,63 @@ td {
 
 
 .day-event-item{
+
     display:flex;
+
     justify-content:space-between;
-    align-items:flex-start;
-    gap:16px;
-}
 
-.day-event-item .actions{
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    flex-shrink:0;
-}
-
-.day-event-item .actions button{
-    min-width:110px;
-}
-
-
-.day-event-item{
-    display:flex;
-    justify-content:space-between;
     align-items:center;
+
     gap:20px;
 
     padding:18px;
-    border:1px solid var(--border);
-    border-radius:16px;
-    background:linear-gradient(
-        180deg,
-        #ffffff,
-        #f7f9fc
-    );
 
-    margin-bottom:14px;
 }
 
-.day-event-item > div:first-child{
+.day-event-content{
+
     flex:1;
+
+}
+
+.day-event-title{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    margin-bottom:8px;
+
 }
 
 .day-info{
-    font-size:0.82rem;
+
+    margin-top:5px;
+
+    font-size:.82rem;
+
     color:var(--text-muted);
-    margin-top:4px;
+
 }
 
 .day-event-actions{
+
     display:flex;
-    flex-direction:row;
+
     gap:10px;
+
     align-items:center;
+
+    justify-content:flex-end;
+
 }
 
-.day-event-actions button{
-    min-width:100px;
+.day-event-actions .edit,
+
+.day-event-actions .delete{
+
+    min-width:110px;
+
 }

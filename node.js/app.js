@@ -1774,21 +1774,34 @@ function openDayModal(dateStr, dayEvs) {
       const item = document.createElement("div");
       item.className = "day-event-item";
       item.innerHTML = `
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-            <span class="day-event-type-badge cal-event-chip type-${ev.type}">${t.icon} ${t.label}</span>
-            <strong style="font-size:0.9rem;">${ev.title || t.label}</strong>
-          </div>
-          ${ev.time ? `<div style="font-size:0.8rem;color:var(--text-muted)">⏰ ${ev.time}</div>` : ""}
-          ${car ? `<div style="font-size:0.8rem;color:var(--text-muted)">🚗 ${car.name} · <span class="plate-code">${car.plate}</span></div>` : ""}
-          <div style="font-size:0.8rem;color:var(--text-muted)">🧑‍💼 ${ev.vendor}</div>
-          ${ev.client ? `<div style="font-size:0.8rem;color:var(--text-muted)">👤 ${ev.client}</div>` : ""}
-          ${ev.note ? `<div style="font-size:0.8rem;color:var(--text-muted);margin-top:3px;">📝 ${ev.note}</div>` : ""}
+    <div class="day-event-content">
+
+        <div class="day-event-title">
+
+            <span class="day-event-type-badge cal-event-chip type-${ev.type}">
+                ${t.icon} ${t.label}
+            </span>
+
+            <strong>${ev.title || t.label}</strong>
+
         </div>
-        <div style="display:flex;gap:6px;flex-shrink:0;align-items:flex-start;"></div>
-      `;
+
+        ${ev.time ? `<div class="day-info">⏰ ${ev.time}</div>` : ""}
+
+        ${car ? `<div class="day-info">🚗 ${car.name} · <span class="plate-code">${car.plate}</span></div>` : ""}
+
+        <div class="day-info">🧑‍💼 ${ev.vendor}</div>
+
+        ${ev.client ? `<div class="day-info">👤 ${ev.client}</div>` : ""}
+
+        ${ev.note ? `<div class="day-info">📝 ${ev.note}</div>` : ""}
+
+    </div>
+
+    <div class="day-event-actions"></div>
+`;
       const acts = item.querySelector("div:last-child");
-      acts.className = "day-event-actions";
+     
 
       const editBtn = document.createElement("button");
       editBtn.className = "actions"; // reutiliza estilos
