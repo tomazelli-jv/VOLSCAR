@@ -558,42 +558,44 @@
   </div>
 
   <!-- MODAL: CONFIRMAÇÃO -->
-        <p>
+<div id="confirmModal" class="modal hidden">
 
-            Deseja realmente excluir este registro?
+    <div class="modal-content confirm-modal">
 
-            <strong>
+        <div class="confirm-header">
+            <h2 id="confirmTitle">CONFIRMAR EXCLUSÃO</h2>
+        </div>
 
-                Não poderá recuperá-lo caso o faça.
+        <div class="confirm-body">
 
-            </strong>
+            <p id="confirmMessage">
+                Deseja realmente excluir este registro?
+            </p>
 
-        </p>
+            <div class="confirm-actions">
 
-        <div class="confirm-actions">
+                <button
+                    id="confirmCancel"
+                    type="button"
+                    class="confirm-cancel">
 
-            <button
-                id="confirmCancel"
-                class="confirm-cancel">
+                    Cancelar
 
-                Cancelar
+                </button>
 
-            </button>
+                <button
+                    id="confirmOk"
+                    type="button"
+                    class="confirm-delete">
 
-            <button
-                id="confirmOk"
-                class="confirm-delete">
+                    Excluir
 
-                Excluir
+                </button>
 
-            </button>
+            </div>
 
         </div>
 
     </div>
 
 </div>
-
-  <script src="app.js"></script>
-</body>
-</html>
