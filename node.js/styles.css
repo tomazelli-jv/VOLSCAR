@@ -2199,10 +2199,48 @@ td {
 
 }
 
-.day-event-actions .edit,
+.day-event-actions{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:12px;
+    margin-top:18px;
+}
+
+.day-event-actions button{
+
+    min-width:120px;
+    padding:9px 18px;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:700;
+    transition:.25s;
+}
+
+.day-event-actions .edit{
+
+    background:#FFF7ED;
+    color:#92400E;
+    border:1px solid #FDE68A;
+
+}
+
+.day-event-actions .edit:hover{
+
+    background:#FEF3C7;
+
+}
 
 .day-event-actions .delete{
 
-    min-width:110px;
+    background:#FEF2F2;
+    color:#991B1B;
+    border:1px solid #FECACA;
+
+}
+
+.day-event-actions .delete:hover{
+
+    background:#FEE2E2;
 
 }

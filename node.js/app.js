@@ -1774,31 +1774,29 @@ function openDayModal(dateStr, dayEvs) {
       const item = document.createElement("div");
       item.className = "day-event-item";
       item.innerHTML = `
-    <div class="day-event-content">
+<div class="day-event-content">
 
-        <div class="day-event-title">
+    <div class="day-event-title">
+        <span class="day-event-type-badge cal-event-chip type-${ev.type}">
+            ${t.icon} ${t.label}
+        </span>
 
-            <span class="day-event-type-badge cal-event-chip type-${ev.type}">
-                ${t.icon} ${t.label}
-            </span>
-
-            <strong>${ev.title || t.label}</strong>
-
-        </div>
-
-        ${ev.time ? `<div class="day-info">⏰ ${ev.time}</div>` : ""}
-
-        ${car ? `<div class="day-info">🚗 ${car.name} · <span class="plate-code">${car.plate}</span></div>` : ""}
-
-        <div class="day-info">🧑‍💼 ${ev.vendor}</div>
-
-        ${ev.client ? `<div class="day-info">👤 ${ev.client}</div>` : ""}
-
-        ${ev.note ? `<div class="day-info">📝 ${ev.note}</div>` : ""}
-
+        <strong>${ev.title || t.label}</strong>
     </div>
 
+    ${ev.time ? `<div class="day-info">⏰ ${ev.time}</div>` : ""}
+
+    ${car ? `<div class="day-info">🚗 ${car.name} · <span class="plate-code">${car.plate}</span></div>` : ""}
+
+    <div class="day-info">🧑‍💼 ${ev.vendor}</div>
+
+    ${ev.client ? `<div class="day-info">👤 ${ev.client}</div>` : ""}
+
+    ${ev.note ? `<div class="day-info">📝 ${ev.note}</div>` : ""}
+
     <div class="day-event-actions"></div>
+
+</div>
 `;
       const acts = item.querySelector("div:last-child");
      
