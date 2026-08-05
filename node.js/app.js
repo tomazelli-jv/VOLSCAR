@@ -1061,7 +1061,6 @@ function openModal(editId = null) {
       carPlate.value              = car.plate;
       carChassis.value            = car.chassis;
       carArrival.value            = car.arrivalDate;
-      carScheduledDeparture.value = car.scheduledDeparture || "";
     }
 
   } else {
@@ -1072,7 +1071,6 @@ function openModal(editId = null) {
     carPlate.value              = "";
     carChassis.value            = "";
     carArrival.value            = new Date().toISOString().slice(0, 16);
-    carScheduledDeparture.value = "";
 
   }
 
@@ -2092,7 +2090,6 @@ carForm.addEventListener("submit", async e => {
     plate: carPlate.value.trim().toUpperCase(),
     chassis: carChassis.value.trim(),
     arrivalDate: carArrival.value,
-    scheduledDeparture: carScheduledDeparture.value || null
   };
 
   if (!carData.name || !carData.model || !carData.plate) {

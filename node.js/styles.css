@@ -240,15 +240,6 @@ button, input, select { font: inherit; }
 .login-btn:hover { background: var(--vw-blue-mid); transform: translateY(-1px); }
 .login-btn:active { transform: translateY(0); }
 
-.hint {
-  margin-top: 16px;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  padding: 10px 14px;
-  background: var(--surface2);
-  border-radius: 8px;
-  border-left: 3px solid var(--border);
-}
 
 .login-error {
   color: var(--vw-red);
