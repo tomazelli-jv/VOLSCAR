@@ -1866,7 +1866,7 @@ function populateEventCarSelect(selectedCarId = null) {
   availableCars.forEach(c => {
     const opt = document.createElement("option");
     opt.value = c.id;
-    opt.textContent = `${c.name} · ${c.plate}`;
+    opt.textContent = `${c.model} • Chassi: ${c.chassis}`;
     eventCar.appendChild(opt);
   });
 }
@@ -1907,7 +1907,7 @@ function openEventModal(editId = null, prefillDate = null) {
       eventTitle.value   = ev.title || "";
       eventDate.value    = ev.date;
       eventTime.value    = ev.time || "";
-      eventType.value    = ev.type || "entrega";
+      eventType.value    = ev.type || "saida";
       eventCar.value     = ev.carId || "";
       eventVendor.value  = ev.vendor || "";
       eventClient.value  = ev.client || "";
@@ -1919,7 +1919,7 @@ function openEventModal(editId = null, prefillDate = null) {
     eventTitle.value   = "";
     eventDate.value    = prefillDate || new Date().toISOString().slice(0, 10);
     eventTime.value    = "";
-    eventType.value    = "entrega";
+    eventType.value    = "saida";
     eventCar.value     = "";
     eventVendor.value  = "";
     eventClient.value  = "";
