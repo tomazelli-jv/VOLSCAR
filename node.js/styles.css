@@ -2162,3 +2162,43 @@ td {
 .day-event-item .actions button{
     min-width:110px;
 }
+
+
+.day-event-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:20px;
+
+    padding:18px;
+    border:1px solid var(--border);
+    border-radius:16px;
+    background:linear-gradient(
+        180deg,
+        #ffffff,
+        #f7f9fc
+    );
+
+    margin-bottom:14px;
+}
+
+.day-event-item > div:first-child{
+    flex:1;
+}
+
+.day-info{
+    font-size:0.82rem;
+    color:var(--text-muted);
+    margin-top:4px;
+}
+
+.day-event-actions{
+    display:flex;
+    flex-direction:row;
+    gap:10px;
+    align-items:center;
+}
+
+.day-event-actions button{
+    min-width:100px;
+}
