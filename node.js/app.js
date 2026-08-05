@@ -2177,13 +2177,15 @@ closeUpcomingModal.addEventListener("click", () => upcomingModal.classList.add("
    START
    ========================================================== */
 async function init() {
-  loadAuth();
-  if (currentUser && authToken) {
-    await renderApp();
-    showApp();
-  } else {
+
+    localStorage.removeItem("token");
+    localStorage.removeItem("currentUser");
+
+    authToken = null;
+    currentUser = null;
+
     showLogin();
-  }
+
 }
 
 init();

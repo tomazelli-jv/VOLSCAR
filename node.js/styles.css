@@ -1023,17 +1023,15 @@ td {
 /* =====================================================
    MODAL
    ===================================================== */
-.modal {
-  position: fixed;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  background: rgba(0,10,30,0.55);
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
-  padding: 16px;
-  z-index: 200;
-  animation: fadeIn 0.2s ease;
+ .modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(0, 10, 30, .55);
+    padding: 16px;
+    z-index: 200;
 }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -1046,6 +1044,8 @@ td {
   position: relative;
   box-shadow: var(--shadow-lg);
   animation: slideUp 0.25s ease;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 @keyframes slideUp {
@@ -1631,6 +1631,18 @@ td {
   .tab-button { padding: 12px 14px; }
   main { padding: 0 16px 40px; margin-top: 20px; }
 
+   body{
+        overflow:hidden;
+    }
+
+  .modal{
+
+        align-items:flex-start;
+
+        padding:12px;
+
+    }
+
   .panel-header {
     flex-direction: column;
     align-items: stretch;
@@ -1665,6 +1677,15 @@ td {
     overflow-x: auto;
     margin-bottom: 0;
   }
+
+  
+    .modal-content{
+
+        width:100%;
+        max-height:calc(100dvh - 24px);
+        overflow-y:auto;
+
+    }
 
   .responsive-table th,
   .responsive-table td {
