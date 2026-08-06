@@ -1,0 +1,35 @@
+"filename", "language", "JavaScript", "JSON", "HTML", "Markdown", "PostCSS", "MS SQL", "comment", "blank", "total"
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\.github\copilot-instructions.md", "Markdown", 0, 0, 0, 14, 0, 0, 15, 11, 40
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\DEPLOY_CHECKLIST.md", "Markdown", 0, 0, 0, 103, 0, 0, 0, 28, 131
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\HOSTINGER_DEPLOY.md", "Markdown", 0, 0, 0, 81, 0, 0, 0, 34, 115
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\README.md", "Markdown", 0, 0, 0, 36, 0, 0, 0, 16, 52
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\app.js", "JavaScript", 1831, 0, 0, 0, 0, 0, 65, 358, 2254
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\config\database.js", "JavaScript", 14, 0, 0, 0, 0, 0, 1, 3, 18
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\controllers\authController.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 1, 1
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\controllers\carController.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 1, 1
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\controllers\eventController.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 1, 1
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\controllers\userController.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 1, 1
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\gerar.js", "JavaScript", 1, 0, 0, 0, 0, 0, 0, 0, 1
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\index.html", "HTML", 0, 0, 521, 0, 0, 0, 21, 51, 593
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\init-db.js", "JavaScript", 26, 0, 0, 0, 0, 0, 1, 5, 32
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\middleware\auth.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 1, 1
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\middleware\permissions.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 1, 1
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\package.json", "JSON", 0, 33, 0, 0, 0, 0, 0, 1, 34
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\routes\auth.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 1, 1
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\routes\cars.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 1, 1
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\routes\events.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 1, 1
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\routes\permissions.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 1, 1
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\routes\users.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 1, 1
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\schema.sql", "MS SQL", 0, 0, 0, 0, 0, 82, 12, 11, 105
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\server.js", "JavaScript", 1068, 0, 0, 0, 0, 0, 91, 260, 1419
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\services\authService.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 1, 1
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\services\carService.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 1, 1
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\services\eventService.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 1, 1
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\services\permissionService.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 1, 1
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\services\userService.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 1, 1
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\styles.css", "PostCSS", 0, 0, 0, 0, 1783, 0, 61, 405, 2249
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\test\userValidation.test.js", "JavaScript", 29, 0, 0, 0, 0, 0, 0, 8, 37
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\utils\jwt.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 1, 1
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\utils\userValidation.js", "JavaScript", 33, 0, 0, 0, 0, 0, 0, 8, 41
+"c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\utils\validators.js", "JavaScript", 0, 0, 0, 0, 0, 0, 0, 1, 1
+"Total", "-", 3002, 33, 521, 234, 1783, 82, 267, 1217, 7139

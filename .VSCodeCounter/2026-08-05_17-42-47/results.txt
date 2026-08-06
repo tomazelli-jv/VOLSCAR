@@ -1,0 +1,72 @@
+Date : 2026-08-05 17:42:47
+Directory : c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026
+Total : 33 files,  5655 codes, 267 comments, 1217 blanks, all 7139 lines
+
+Languages
++------------+------------+------------+------------+------------+------------+
+| language   | files      | code       | comment    | blank      | total      |
++------------+------------+------------+------------+------------+------------+
+| JavaScript |         25 |      3,002 |        158 |        660 |      3,820 |
+| PostCSS    |          1 |      1,783 |         61 |        405 |      2,249 |
+| HTML       |          1 |        521 |         21 |         51 |        593 |
+| Markdown   |          4 |        234 |         15 |         89 |        338 |
+| MS SQL     |          1 |         82 |         12 |         11 |        105 |
+| JSON       |          1 |         33 |          0 |          1 |         34 |
++------------+------------+------------+------------+------------+------------+
+
+Directories
++-------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                      | files      | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                         |         33 |      5,655 |        267 |      1,217 |      7,139 |
+| node.js                                                                                   |         33 |      5,655 |        267 |      1,217 |      7,139 |
+| node.js (Files)                                                                           |         11 |      5,565 |        251 |      1,169 |      6,985 |
+| node.js\.github                                                                           |          1 |         14 |         15 |         11 |         40 |
+| node.js\config                                                                            |          1 |         14 |          1 |          3 |         18 |
+| node.js\controllers                                                                       |          4 |          0 |          0 |          4 |          4 |
+| node.js\middleware                                                                        |          2 |          0 |          0 |          2 |          2 |
+| node.js\routes                                                                            |          5 |          0 |          0 |          5 |          5 |
+| node.js\services                                                                          |          5 |          0 |          0 |          5 |          5 |
+| node.js\test                                                                              |          1 |         29 |          0 |          8 |         37 |
+| node.js\utils                                                                             |          3 |         33 |          0 |         10 |         43 |
++-------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| filename                                                                                  | language   | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\.github\copilot-instructions.md | Markdown   |         14 |         15 |         11 |         40 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\DEPLOY_CHECKLIST.md             | Markdown   |        103 |          0 |         28 |        131 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\HOSTINGER_DEPLOY.md             | Markdown   |         81 |          0 |         34 |        115 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\README.md                       | Markdown   |         36 |          0 |         16 |         52 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\app.js                          | JavaScript |      1,831 |         65 |        358 |      2,254 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\config\database.js              | JavaScript |         14 |          1 |          3 |         18 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\controllers\authController.js   | JavaScript |          0 |          0 |          1 |          1 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\controllers\carController.js    | JavaScript |          0 |          0 |          1 |          1 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\controllers\eventController.js  | JavaScript |          0 |          0 |          1 |          1 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\controllers\userController.js   | JavaScript |          0 |          0 |          1 |          1 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\gerar.js                        | JavaScript |          1 |          0 |          0 |          1 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\index.html                      | HTML       |        521 |         21 |         51 |        593 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\init-db.js                      | JavaScript |         26 |          1 |          5 |         32 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\middleware\auth.js              | JavaScript |          0 |          0 |          1 |          1 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\middleware\permissions.js       | JavaScript |          0 |          0 |          1 |          1 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\package.json                    | JSON       |         33 |          0 |          1 |         34 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\routes\auth.js                  | JavaScript |          0 |          0 |          1 |          1 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\routes\cars.js                  | JavaScript |          0 |          0 |          1 |          1 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\routes\events.js                | JavaScript |          0 |          0 |          1 |          1 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\routes\permissions.js           | JavaScript |          0 |          0 |          1 |          1 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\routes\users.js                 | JavaScript |          0 |          0 |          1 |          1 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\schema.sql                      | MS SQL     |         82 |         12 |         11 |        105 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\server.js                       | JavaScript |      1,068 |         91 |        260 |      1,419 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\services\authService.js         | JavaScript |          0 |          0 |          1 |          1 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\services\carService.js          | JavaScript |          0 |          0 |          1 |          1 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\services\eventService.js        | JavaScript |          0 |          0 |          1 |          1 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\services\permissionService.js   | JavaScript |          0 |          0 |          1 |          1 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\services\userService.js         | JavaScript |          0 |          0 |          1 |          1 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\styles.css                      | PostCSS    |      1,783 |         61 |        405 |      2,249 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\test\userValidation.test.js     | JavaScript |         29 |          0 |          8 |         37 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\utils\jwt.js                    | JavaScript |          0 |          0 |          1 |          1 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\utils\userValidation.js         | JavaScript |         33 |          0 |          8 |         41 |
+| c:\Users\RENSOFTWARE\Documents\Volscar\30-07-2026\node.js\utils\validators.js             | JavaScript |          0 |          0 |          1 |          1 |
+| Total                                                                                     |            |      5,655 |        267 |      1,217 |      7,139 |
++-------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
