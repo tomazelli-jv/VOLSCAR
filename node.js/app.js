@@ -1846,9 +1846,43 @@ function closeDayModalFn() { dayModal.classList.add("hidden"); dayModalDate = nu
 
 /* ── Modal Evento ── */
 function hasExitRecorded(car) {
-  const hasDepartureDate = !!car.departureDate && car.departureDate.trim() !== "";
-  const hasExitEvent = events.some(ev => ev.carId === car.id && ev.type === "saida");
-  return hasDepartureDate || hasExitEvent;
+
+  // Se a saída já foi registrada manualmente
+  if (car.departureDate && car.departureDate.trim() !== "") {
+    return true;
+  }
+
+  const now = new Date();
+
+  return events.some(ev => {
+
+    if (ev.carId !== car.id) return false;
+    if (ev.type !== "saida") return false;
+
+    const eventDate = new Date(`${ev.date}T${ev.time || "00:00"}`);
+
+    // Só considera que saiu se a data/hora já passou
+    return eventDate <= now;
+
+  });
+
+}
+
+function hasScheduledExit(car) {
+
+  const now = new Date();
+
+  return events.some(ev => {
+
+    if (ev.carId !== car.id) return false;
+    if (ev.type !== "saida") return false;
+
+    const eventDate = new Date(`${ev.date}T${ev.time || "00:00"}`);
+
+    return eventDate > now;
+
+  });
+
 }
 
 function populateEventCarSelect(selectedCarId = null) {

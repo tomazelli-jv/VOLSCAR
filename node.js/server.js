@@ -270,10 +270,11 @@ const requirePermission = (permissionName) => {
   // ADD CAR
   // =======================================
 
-  app.post('/api/cars',
-    authenticateToken,
-    requirePermission('create_cars'),
-    async (req, res) => {
+ app.post(
+  '/api/cars',
+  authenticateToken,
+  requirePermission('create_cars'),
+  async (req, res) => {
     try {
 
       const {
@@ -286,91 +287,43 @@ const requirePermission = (permissionName) => {
       } = req.body;
 
       const [result] = await pool.execute(
-    `
-    INSERT INTO cars
-    (
-      name,
-      model,
-      plate,
-      chassis,
-      arrival_date,
-      scheduled_departure
-    )
-    VALUES (?, ?, ?, ?, ?, ?)
-    `,
-    [
-      name,
-      model,
-      plate,
-      chassis,
-      arrivalDate || null,
-      scheduledDeparture || null
-    ]
-  );
+        `
+        INSERT INTO cars
+        (
+          name,
+          model,
+          plate,
+          chassis,
+          arrival_date,
+          scheduled_departure
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        `,
+        [
+          name,
+          model,
+          plate,
+          chassis,
+          arrivalDate || null,
+          scheduledDeparture || null
+        ]
+      );
 
-  const carId = result.insertId;
-
-  // Cria evento automático de saída
-  if (scheduledDeparture) {
-
-    await pool.execute(
-      `
-      INSERT INTO events
-      (
-        car_id,
-        type,
-        title,
-        date,
-        time,
-        vendor,
-        client,
-        note,
-        source,
-        source_id
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `,
-      [
-      carId,
-      'saida',
-      `🚗 ${name}`,
-      scheduledDeparture,
-      '08:00',
-      '',
-      '',
-      `
-Veículo: ${name}
-
-Modelo: ${model}
-
-Placa: ${plate}
-
-Chassi: ${chassis}
-
-Entrada: ${arrivalDate || '-'}
-
-Saída prevista: ${scheduledDeparture || '-'}
-  `,
-      'system',
-      carId
-  ]
-    );
-
-  }
-
-  res.status(201).json({
-    id: carId
-  });
+      return res.status(201).json({
+        id: result.insertId
+      });
 
     } catch (error) {
 
       console.error(error);
 
-      res.status(500).json({
+      return res.status(500).json({
         error: 'Server error'
       });
+
     }
-  });
+  }
+);
 
   // =======================================
   // UPDATE CAR
