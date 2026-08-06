@@ -2247,3 +2247,9 @@ td {
 .day-event-actions button{
     min-width:100px;
 }
+
+.status-scheduled{
+    background:#fff4d6;
+    color:#a66a00;
+    border:1px solid #ffd86a;
+}

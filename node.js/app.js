@@ -680,6 +680,25 @@ function renderUsersTable() {
     return;
   }
 
+const hasScheduled = hasScheduledExit(car);
+
+let statusHtml = `<span class="status-pill status-in">Em estoque</span>`;
+
+if (hasExited) {
+
+  statusHtml = `<span class="status-pill status-out">
+    Saiu ${formatDateTime(car.departureDate)}
+  </span>`;
+
+}
+else if (hasScheduled) {
+
+  statusHtml = `<span class="status-pill status-scheduled">
+    Saída prevista
+  </span>`;
+
+}
+
   users.forEach(user => {
     const row = document.createElement("tr");
     const statusBadge = user.status === 'active' 
@@ -1157,10 +1176,8 @@ const inStock = !hasExited;
           : "—"}
       </td>
       <td data-label="Status">
-        ${inStock
-          ? `<span class="status-pill status-in">Em estoque</span>`
-          : `<span class="status-pill status-out">Saiu ${formatDateTime(car.departureDate)}</span>`}
-      </td>
+  ${statusHtml}
+</td>
       <td class="actions" data-label="Ações"></td>
     `;
 
