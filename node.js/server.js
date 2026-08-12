@@ -247,9 +247,9 @@ const requirePermission = (permissionName) => {
           model,
           plate,
           chassis,
-          DATE_FORMAT(arrival_date, '%Y-%m-%d') AS arrivalDate,
-          DATE_FORMAT(scheduled_departure, '%Y-%m-%d') AS scheduledDeparture,
-          DATE_FORMAT(departure_date, '%Y-%m-%d') AS departureDate
+          DATE_FORMAT(arrival_date, '%Y-%m-%dT%H:%i') AS arrivalDate,
+          DATE_FORMAT(scheduled_departure, '%Y-%m-%dT%H:%i') AS scheduledDeparture,
+          DATE_FORMAT(departure_date, '%Y-%m-%dT%H:%i') AS departureDate
         FROM cars
         ORDER BY id DESC
       `);
@@ -376,8 +376,12 @@ const requirePermission = (permissionName) => {
       const finalPlate = plate ?? currentCar.plate;
       const finalChassis = chassis ?? currentCar.chassis;
       const finalArrivalDate = arrivalDate ?? currentCar.arrival_date;
-      const finalScheduledDeparture = scheduledDeparture ?? currentCar.scheduled_departure;
-      const finalDepartureDate = departureDate ?? currentCar.departure_date;
+      const finalScheduledDeparture = Object.prototype.hasOwnProperty.call(req.body, 'scheduledDeparture')
+        ? (scheduledDeparture || null)
+        : currentCar.scheduled_departure;
+      const finalDepartureDate = Object.prototype.hasOwnProperty.call(req.body, 'departureDate')
+        ? (departureDate || null)
+        : currentCar.departure_date;
 
       await pool.execute(
   `

@@ -1088,7 +1088,8 @@ function getFilteredCars() {
   const status = filterStatus.value;
   return cars.filter(car => {
     const matchText = [car.name, car.model, car.plate, car.chassis].some(f => f.toLowerCase().includes(query));
-    const matchStatus = status === "all" ? true : status === "in" ? car.departureDate === "" : car.departureDate !== "";
+    const hasExited = Boolean(car.departureDate && String(car.departureDate).trim());
+    const matchStatus = status === "all" ? true : status === "in" ? !hasExited : hasExited;
     return matchText && matchStatus;
   });
 }
@@ -1098,11 +1099,15 @@ async function checkScheduledDepartures() {
   const updates = [];
 
   for (const car of cars) {
+    const inStock = !car.departureDate || String(car.departureDate).trim() === "";
     if (car.scheduledDeparture && inStock) {
       const scheduled = new Date(car.scheduledDeparture);
       if (!isNaN(scheduled) && scheduled <= now) {
         car.departureDate = car.scheduledDeparture;
-        updates.push(updateCarData(car.id, { departureDate: car.departureDate }));
+        updates.push(updateCarData(car.id, {
+          scheduledDeparture: null,
+          departureDate: car.departureDate
+        }));
       }
     }
   }
@@ -1142,7 +1147,8 @@ function renderCarsTable() {
       String(car.departureDate).trim() !== "";
 
     const inStock = !hasExited;
-    const hasScheduled = Boolean(car.scheduledDeparture) || hasScheduledExit(car);
+    const scheduledDate = car.scheduledDeparture || getScheduledExitDate(car);
+    const hasScheduled = Boolean(scheduledDate);
 
     let statusHtml = `<span class="status-pill status-in">Em estoque</span>`;
 
@@ -1152,7 +1158,7 @@ function renderCarsTable() {
       </span>`;
     } else if (hasScheduled) {
       statusHtml = `<span class="status-pill status-scheduled">
-        Saída prevista
+        Saída prevista para ${formatDateTime(scheduledDate)}
       </span>`;
     }
 
@@ -1166,8 +1172,8 @@ function renderCarsTable() {
       <td data-label="Chassi"><span class="chassis-code">${car.chassis}</span></td>
       <td data-label="Chegada">${formatDateTime(car.arrivalDate)}</td>
       <td data-label="Saída prevista">
-        ${car.scheduledDeparture
-          ? `${formatDateTime(car.scheduledDeparture)} ${!car.departureDate ? "<span class='scheduled-badge'>Agendado</span>" : ""}`
+        ${scheduledDate
+          ? `${formatDateTime(scheduledDate)} ${!car.departureDate ? "<span class='scheduled-badge'>Agendado</span>" : ""}`
           : "—"}
       </td>
       <td data-label="Status">
@@ -1210,9 +1216,7 @@ function renderCarsTable() {
       <div class="car-card-header">
         <div class="car-card-title">${car.name}</div>
         <div class="car-card-status">
-          ${inStock
-            ? `<span class="status-pill status-in">Em estoque</span>`
-            : `<span class="status-pill status-out">Saiu</span>`}
+          ${statusHtml}
         </div>
       </div>
       <div class="car-card-detail">
@@ -1228,7 +1232,7 @@ function renderCarsTable() {
         <strong>Chegada:</strong> <span>${formatDateTime(car.arrivalDate)}</span>
       </div>
       <div class="car-card-detail">
-        <strong>Saída prevista:</strong> <span>${car.scheduledDeparture ? formatDateTime(car.scheduledDeparture) + (inStock ? " (Agendado)" : "") : "—"}</span>
+        <strong>Saída prevista:</strong> <span>${scheduledDate ? formatDateTime(scheduledDate) + (inStock ? " (Agendado)" : "") : "—"}</span>
       </div>
       <div class="car-card-actions"></div>
     `;
@@ -1373,6 +1377,7 @@ async function submitExitRegistration(event) {
   }
 
   const exitDateTime = `${exitDate.value}T${exitTime.value}`;
+  const isFutureExit = new Date(exitDateTime).getTime() > Date.now();
   const vendor = exitVendor.value.trim();
   const client = exitClient.value.trim();
   const note = exitNote.value.trim();
@@ -1389,8 +1394,8 @@ async function submitExitRegistration(event) {
       plate: car.plate,
       chassis: car.chassis,
       arrivalDate: car.arrivalDate,
-      scheduledDeparture: car.scheduledDeparture,
-      departureDate: exitDateTime
+      scheduledDeparture: isFutureExit ? exitDateTime : null,
+      departureDate: isFutureExit ? null : exitDateTime
     });
 
     await createEvent({
@@ -1406,7 +1411,12 @@ async function submitExitRegistration(event) {
 
     await refreshAppData();
     closeExitModalWindow();
-    showAppMessage(`Saída registrada para ${car.name}.`, "info");
+    showAppMessage(
+      isFutureExit
+        ? `Saída prevista registrada para ${car.name}.`
+        : `Saída registrada para ${car.name}.`,
+      "info"
+    );
   } catch (error) {
     console.error("Error registering exit:", error);
     alert("Erro ao registrar saída");
@@ -1882,9 +1892,16 @@ function hasExitRecorded(car) {
 
 function hasScheduledExit(car) {
 
+  return Boolean(getScheduledExitDate(car));
+
+}
+
+function getScheduledExitDate(car) {
+
   const now = new Date();
 
-  return events.some(ev => {
+  const scheduledEvents = events
+    .filter(ev => {
 
     if (ev.carId !== car.id) return false;
     if (ev.type !== "saida") return false;
@@ -1893,7 +1910,17 @@ function hasScheduledExit(car) {
 
     return eventDate > now;
 
-  });
+    })
+    .sort((a, b) => {
+      const dateA = new Date(`${a.date}T${a.time || "00:00"}`);
+      const dateB = new Date(`${b.date}T${b.time || "00:00"}`);
+      return dateA - dateB;
+    });
+
+  if (!scheduledEvents.length) return null;
+
+  const nextExit = scheduledEvents[0];
+  return `${nextExit.date}T${nextExit.time || "00:00"}`;
 
 }
 
