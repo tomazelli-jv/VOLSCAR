@@ -869,6 +869,9 @@ app.delete(
       const { id } = req.params;
 
       let permissions = [];
+
+  
+      
       try {
         [permissions] = await pool.execute(`
           SELECT

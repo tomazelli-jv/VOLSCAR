@@ -1138,10 +1138,24 @@ function renderCarsTable() {
 
   filtered.forEach(car => {
     const hasExited =
-    car.departureDate &&
-    car.departureDate.trim() !== "";
+      car.departureDate &&
+      String(car.departureDate).trim() !== "";
 
-const inStock = !hasExited;
+    const inStock = !hasExited;
+    const hasScheduled = Boolean(car.scheduledDeparture) || hasScheduledExit(car);
+
+    let statusHtml = `<span class="status-pill status-in">Em estoque</span>`;
+
+    if (hasExited) {
+      statusHtml = `<span class="status-pill status-out">
+        Saiu ${formatDateTime(car.departureDate)}
+      </span>`;
+    } else if (hasScheduled) {
+      statusHtml = `<span class="status-pill status-scheduled">
+        Saída prevista
+      </span>`;
+    }
+
     const row = document.createElement("tr");
     row.classList.toggle("scheduled-row", !!(car.scheduledDeparture && inStock));
 
