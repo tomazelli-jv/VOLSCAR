@@ -614,50 +614,49 @@ app.delete(
   authenticateToken,
   requirePermission('delete_cars'),
   async (req, res) => {
-
+    const connection = await pool.getConnection();
     try {
-
       const { id } = req.params;
+      await connection.beginTransaction();
 
-      // Remove os eventos automáticos vinculados ao veículo
-      await pool.execute(
-        `
-        DELETE FROM events
-        WHERE source = 'system'
-          AND source_id = ?
-        `,
+      const [carRows] = await connection.execute(
+        'SELECT id FROM cars WHERE id = ? FOR UPDATE',
         [id]
       );
 
-      // Remove o veículo
-      const [result] = await pool.execute(
+      if (!carRows.length) {
+        await connection.rollback();
+        return res.status(404).json({ error: 'Veículo não encontrado.' });
+      }
+
+      // Exclui eventos manuais e automáticos vinculados ao veículo.
+      await connection.execute(
+        `DELETE FROM events
+         WHERE car_id = ? OR (source = 'system' AND source_id = ?)`,
+        [id, id]
+      );
+
+      await connection.execute(
         'DELETE FROM cars WHERE id = ?',
         [id]
       );
 
-      // Verifica se o veículo existia
-      if (result.affectedRows === 0) {
-        return res.status(404).json({
-          error: 'Veículo não encontrado.'
-        });
-      }
+      await connection.commit();
 
-      // Resposta de sucesso
       return res.status(200).json({
         success: true,
-        message: 'Veículo excluído com sucesso.'
+        message: 'Veículo e eventos vinculados excluídos com sucesso.'
       });
 
     } catch (error) {
-
+      await connection.rollback();
       console.error('Erro ao excluir veículo:', error);
-
       return res.status(500).json({
         error: 'Erro interno do servidor.'
       });
-
+    } finally {
+      connection.release();
     }
-
   }
 );
 

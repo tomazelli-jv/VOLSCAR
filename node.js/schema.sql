@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS events (
   client VARCHAR(100),
   note VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (car_id) REFERENCES cars(id) ON DELETE SET NULL
+  FOREIGN KEY (car_id) REFERENCES cars(id) ON DELETE CASCADE
 );
 
 -- Insert sample permissions
