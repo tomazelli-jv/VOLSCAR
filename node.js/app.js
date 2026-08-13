@@ -258,6 +258,18 @@ async function updateCarData(id, data) {
   return await response.json();
 }
 
+async function saveCarExit(id, data) {
+  const response = await apiFetch(`/cars/${id}/exit`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || 'Erro ao registrar saída');
+  }
+  return await response.json();
+}
+
 async function deleteCarData(id) {
   const response = await apiFetch(`/cars/${id}`, { method: 'DELETE' });
   if (!response.ok) {
@@ -764,6 +776,15 @@ function updatePermissionUI() {
 
   // Botão Novo Veículo
   newCarButton.style.display = canCreate("cars")
+    ? "inline-flex"
+    : "none";
+
+  // Controles de criação de eventos
+  newEventButton.style.display = canCreate("events")
+    ? "inline-flex"
+    : "none";
+
+  addEventFromDay.style.display = canCreate("events")
     ? "inline-flex"
     : "none";
 
@@ -1388,22 +1409,11 @@ async function submitExitRegistration(event) {
   }
 
   try {
-    await updateCarData(car.id, {
-      name: car.name,
-      model: car.model,
-      plate: car.plate,
-      chassis: car.chassis,
-      arrivalDate: car.arrivalDate,
+    await saveCarExit(car.id, {
       scheduledDeparture: isFutureExit ? exitDateTime : null,
-      departureDate: isFutureExit ? null : exitDateTime
-    });
-
-    await createEvent({
-      type: "saida",
-      title: `Saída - ${car.name}`,
+      departureDate: isFutureExit ? null : exitDateTime,
       date: exitDate.value,
       time: exitTime.value,
-      carId: car.id,
       vendor,
       client: client || null,
       note: note || null
@@ -1727,17 +1737,21 @@ function renderEventsList(year, month) {
 
     const acts = item.querySelector(".event-list-actions");
 
-    const editBtn = document.createElement("button");
-    editBtn.className = "edit";
-    editBtn.textContent = "Editar";
-    editBtn.onclick = () => openEventModal(ev.id);
-    acts.appendChild(editBtn);
+    if (canEdit("events")) {
+      const editBtn = document.createElement("button");
+      editBtn.className = "edit";
+      editBtn.textContent = "Editar";
+      editBtn.onclick = () => openEventModal(ev.id);
+      acts.appendChild(editBtn);
+    }
 
-    const delBtn = document.createElement("button");
-    delBtn.className = "delete";
-    delBtn.textContent = "Excluir";
-    delBtn.onclick = () => deleteEvent(ev.id);
-    acts.appendChild(delBtn);
+    if (canDelete("events")) {
+      const delBtn = document.createElement("button");
+      delBtn.className = "delete";
+      delBtn.textContent = "Excluir";
+      delBtn.onclick = () => deleteEvent(ev.id);
+      acts.appendChild(delBtn);
+    }
 
     agendaEventsList.appendChild(item);
   });
@@ -1788,9 +1802,12 @@ function openDayModal(dateStr, dayEvs) {
   const canCreateEvents = canCreate("events");
   const canEditEvents = canEdit("events");
   const canDeleteEvents = canDelete("events");
+  addEventFromDay.style.display = canCreateEvents ? "inline-flex" : "none";
 
   if (dayEvs.length === 0) {
-    dayModalBody.innerHTML = `<p class="day-no-events">Nenhum evento neste dia. Clique em "+ Adicionar evento" para criar.</p>`;
+    dayModalBody.innerHTML = `<p class="day-no-events">${canCreateEvents
+      ? 'Nenhum evento neste dia. Clique em "+ Adicionar evento" para criar.'
+      : 'Nenhum evento neste dia.'}</p>`;
   } else {
     dayEvs.forEach(ev => {
       const car = ev.carId ? cars.find(c => c.id === ev.carId) : null;

@@ -523,6 +523,88 @@ Saída prevista: ${finalScheduledDeparture || '-'}
     }
   });
 
+  // Registra ou substitui a saída de um veículo. Um veículo mantém
+  // somente um evento de saída, evitando duplicatas após edições.
+  app.put(
+    '/api/cars/:id/exit',
+    authenticateToken,
+    requirePermission('edit_cars'),
+    async (req, res) => {
+      const connection = await pool.getConnection();
+
+      try {
+        const { id } = req.params;
+        const {
+          scheduledDeparture,
+          departureDate,
+          date,
+          time,
+          vendor,
+          client,
+          note
+        } = req.body;
+
+        if (!date || !time || !vendor) {
+          return res.status(400).json({
+            error: 'Data, horário e vendedor são obrigatórios.'
+          });
+        }
+
+        await connection.beginTransaction();
+
+        const [carRows] = await connection.execute(
+          'SELECT id, name FROM cars WHERE id = ? FOR UPDATE',
+          [id]
+        );
+
+        if (!carRows.length) {
+          await connection.rollback();
+          return res.status(404).json({ error: 'Veículo não encontrado.' });
+        }
+
+        await connection.execute(
+          `UPDATE cars
+           SET scheduled_departure = ?, departure_date = ?
+           WHERE id = ?`,
+          [scheduledDeparture || null, departureDate || null, id]
+        );
+
+        // Remove tanto eventos manuais quanto automáticos antigos desse carro.
+        await connection.execute(
+          `DELETE FROM events
+           WHERE car_id = ? AND type = 'saida'`,
+          [id]
+        );
+
+        const isScheduled = Boolean(scheduledDeparture);
+        await connection.execute(
+          `INSERT INTO events
+           (type, title, date, time, car_id, vendor, client, note)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            'saida',
+            `${isScheduled ? 'Saída prevista' : 'Saída'} - ${carRows[0].name}`,
+            date,
+            time,
+            id,
+            vendor,
+            client || null,
+            note || null
+          ]
+        );
+
+        await connection.commit();
+        res.json({ message: 'Saída salva com sucesso.' });
+      } catch (error) {
+        await connection.rollback();
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao salvar saída.' });
+      } finally {
+        connection.release();
+      }
+    }
+  );
+
   // =======================================
   // DELETE CAR
   // =======================================
