@@ -2,14 +2,13 @@
 
   const express = require('express');
   const cors = require('cors');
+  const helmet = require('helmet');
   const rateLimit = require('express-rate-limit');
   const bcrypt = require("bcryptjs");
   const jwt = require('jsonwebtoken');
   const path = require('path');
   const pool = require('./config/database');
   const { normalizePermissionIds, validateUserPayload } = require('./utils/userValidation');
-
-  console.log('DB_HOST:', process.env.DB_HOST);
 
   const app = express();
   app.set('trust proxy', 1);
@@ -21,44 +20,109 @@
 
   const PORT = process.env.PORT || 3000;
   const JWT_SECRET = process.env.JWT_SECRET;
+  const APP_ORIGIN = process.env.APP_ORIGIN;
+  const JWT_ISSUER = process.env.JWT_ISSUER || 'volscar';
+  const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'volscar-web';
 
-  if (!JWT_SECRET) {
-    throw new Error('JWT_SECRET not configured');
+  if (!JWT_SECRET || JWT_SECRET.length < 64) {
+    throw new Error('JWT_SECRET must contain at least 64 characters');
+  }
+  if (process.env.NODE_ENV === 'production' && !APP_ORIGIN) {
+    throw new Error('APP_ORIGIN must be configured in production');
   }
 
   // Middleware
-  app.use(cors());
-  app.use(express.json());
+  app.disable('x-powered-by');
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", 'https://cdn.jsdelivr.net'],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        imgSrc: ["'self'", 'data:'],
+        connectSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"]
+      }
+    },
+    crossOriginEmbedderPolicy: false,
+    referrerPolicy: { policy: 'no-referrer' }
+  }));
+  app.use(cors({
+    origin(origin, callback) {
+      if (!origin || !APP_ORIGIN || origin === APP_ORIGIN) {
+        return callback(null, true);
+      }
+      return callback(new Error('Origin not allowed by CORS'));
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    maxAge: 86400
+  }));
+  app.use(express.json({ limit: '32kb', strict: true }));
+  app.use('/api', (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
+    next();
+  });
   app.use(express.static(path.join(__dirname)));
 
   // Rate limiting
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100
+    limit: 300,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false
   });
 
   app.use(limiter);
+
+  const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 10,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    skipSuccessfulRequests: true,
+    message: { error: 'Muitas tentativas. Aguarde 15 minutos e tente novamente.' }
+  });
 
   // =======================================
   // AUTH MIDDLEWARE
   // =======================================
 
-  const authenticateToken = (req, res, next) => {
+  const authenticateToken = async (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
-      return res.sendStatus(401);
+      return res.status(401).json({ error: 'Authentication required' });
     }
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-      if (err) {
-        return res.sendStatus(403);
+    try {
+      const tokenUser = jwt.verify(token, JWT_SECRET, {
+        algorithms: ['HS256'],
+        issuer: JWT_ISSUER,
+        audience: JWT_AUDIENCE
+      });
+
+      const hasStatusColumn = await userHasStatusColumn();
+      const [rows] = await pool.execute(
+        `SELECT id, username, role${hasStatusColumn ? ', status' : ''}
+         FROM users WHERE id = ? LIMIT 1`,
+        [tokenUser.id]
+      );
+      const currentUser = rows[0];
+      if (!currentUser || (hasStatusColumn && currentUser.status !== 'active')) {
+        return res.status(401).json({ error: 'Authentication required' });
       }
 
-      req.user = user;
+      req.user = currentUser;
       next();
-    });
+    } catch (error) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
   };
 
 
@@ -118,6 +182,30 @@ const requirePermission = (permissionName) => {
 
 };
 
+const requireAdmin = async (req, res, next) => {
+  try {
+    const hasStatusColumn = await userHasStatusColumn();
+    const [rows] = await pool.execute(
+      `SELECT role${hasStatusColumn ? ', status' : ''} FROM users WHERE id = ? LIMIT 1`,
+      [req.user.id]
+    );
+
+    const user = rows[0];
+    if (!user || user.role !== 'admin' || (hasStatusColumn && user.status !== 'active')) {
+      return res.status(403).json({
+        success: false,
+        code: 'ADMIN_REQUIRED',
+        error: 'Acesso restrito a administradores.'
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error('Admin authorization failed:', error);
+    res.status(500).json({ error: 'Erro ao validar autorização.' });
+  }
+};
+
 
 
   async function userHasStatusColumn() {
@@ -133,7 +221,7 @@ const requirePermission = (permissionName) => {
   // LOGIN
   // =======================================
 
-  app.post('/api/login', async (req, res) => {
+  app.post('/api/login', loginLimiter, async (req, res) => {
     try {
 
       const { username, password } = req.body;
@@ -144,8 +232,10 @@ const requirePermission = (permissionName) => {
         });
       }
 
+      const hasStatusColumn = await userHasStatusColumn();
       const [rows] = await pool.execute(
-        'SELECT id, username, password, role FROM users WHERE username = ?',
+        `SELECT id, username, password, role${hasStatusColumn ? ', status' : ''}
+         FROM users WHERE username = ?`,
         [username]
       );
 
@@ -156,6 +246,10 @@ const requirePermission = (permissionName) => {
       }
       
       const user = rows[0];
+
+      if (hasStatusColumn && user.status !== 'active') {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
 
       const validPassword = await bcrypt.compare(
         password,
@@ -187,8 +281,6 @@ const requirePermission = (permissionName) => {
         permissions = [];
       }
 
-      console.log("ANTES DO JWT");
-
       const token = jwt.sign(
         {
           id: user.id,
@@ -197,18 +289,13 @@ const requirePermission = (permissionName) => {
         },
         JWT_SECRET,
         {
-          expiresIn: '7d'
+          algorithm: 'HS256',
+          expiresIn: '2h',
+          issuer: JWT_ISSUER,
+          audience: JWT_AUDIENCE,
+          subject: String(user.id)
         }
       ); 
-
-      console.log("DEPOIS DO JWT");
-
-  console.log("LOGIN:");
-  console.log({
-      id: user.id,
-      username: user.username,
-      permissions
-  });
 
     res.json({
       token,
@@ -520,6 +607,29 @@ Saída prevista: ${finalScheduledDeparture || '-'}
       res.status(500).json({
         error: 'Server error'
       });
+    }
+  });
+
+  app.post('/api/auth/confirm-password', loginLimiter, authenticateToken, requireAdmin, async (req, res) => {
+    try {
+      const password = typeof req.body.password === 'string' ? req.body.password : '';
+      if (!password) {
+        return res.status(400).json({ error: 'Senha obrigatória.' });
+      }
+
+      const [rows] = await pool.execute(
+        'SELECT password FROM users WHERE id = ? LIMIT 1',
+        [req.user.id]
+      );
+      const valid = rows.length && await bcrypt.compare(password, rows[0].password);
+      if (!valid) {
+        return res.status(401).json({ error: 'Credenciais inválidas.' });
+      }
+
+      res.json({ valid: true });
+    } catch (error) {
+      console.error('Password confirmation failed:', error);
+      res.status(500).json({ error: 'Erro ao confirmar credenciais.' });
     }
   });
 
@@ -914,7 +1024,7 @@ app.delete(
   //  USERS
   // =======================================
 
-  app.get('/api/users', authenticateToken, async (req, res) => {
+  app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
     try {
 
       const hasStatusColumn = await userHasStatusColumn();
@@ -948,7 +1058,7 @@ app.delete(
   // GET USER PERMISSIONS
   // =======================================
 
-  app.get('/api/users/:id/permissions', authenticateToken, async (req, res) => {
+  app.get('/api/users/:id/permissions', authenticateToken, requireAdmin, async (req, res) => {
     try {
 
       const { id } = req.params;
@@ -988,7 +1098,7 @@ app.delete(
     }
   });
 
-  app.post('/api/users/:userId/permissions/:permissionId', authenticateToken, async (req, res) => {
+  app.post('/api/users/:userId/permissions/:permissionId', authenticateToken, requireAdmin, async (req, res) => {
     try {
       const { userId, permissionId } = req.params;
 
@@ -1031,7 +1141,7 @@ app.delete(
     }
   });
 
-  app.delete('/api/users/:userId/permissions/:permissionId', authenticateToken, async (req, res) => {
+  app.delete('/api/users/:userId/permissions/:permissionId', authenticateToken, requireAdmin, async (req, res) => {
     try {
       const { userId, permissionId } = req.params;
 
@@ -1051,7 +1161,7 @@ app.delete(
   // CREATE USER
   // =======================================
 
-  app.post('/api/users', authenticateToken, async (req, res) => {
+  app.post('/api/users', authenticateToken, requireAdmin, async (req, res) => {
     try {
 
       const {
@@ -1067,6 +1177,12 @@ app.delete(
       if (!username || !password) {
         return res.status(400).json({
           error: 'Usuário e senha são obrigatórios'
+        });
+      }
+
+      if (typeof password !== 'string' || password.length < 12 || password.length > 128) {
+        return res.status(400).json({
+          error: 'A senha deve possuir entre 12 e 128 caracteres.'
         });
       }
 
@@ -1171,7 +1287,7 @@ app.delete(
   // UPDATE USER
   // =======================================
 
-  app.put('/api/users/:id', authenticateToken, async (req, res) => {
+  app.put('/api/users/:id', authenticateToken, requireAdmin, async (req, res) => {
     try {
 
       const { id } = req.params;
@@ -1301,7 +1417,7 @@ app.delete(
   // UPDATE USER PASSWORD
   // =======================================
 
-  app.put('/api/users/:id/password', authenticateToken, async (req, res) => {
+  app.put('/api/users/:id/password', authenticateToken, requireAdmin, async (req, res) => {
     try {
 
       const { id } = req.params;
@@ -1310,6 +1426,12 @@ app.delete(
       if (!password) {
         return res.status(400).json({
           error: 'Senha é obrigatória.'
+        });
+      }
+
+      if (password.length < 12 || password.length > 128) {
+        return res.status(400).json({
+          error: 'A senha deve possuir entre 12 e 128 caracteres.'
         });
       }
 
@@ -1336,7 +1458,7 @@ app.delete(
       console.error(error);
 
       res.status(500).json({
-        error: error.message
+        error: 'Database unavailable'
       });
 
     }
@@ -1347,7 +1469,7 @@ app.delete(
   // DELETE USER
   // =======================================
 
-  app.delete('/api/users/:id', authenticateToken, async (req, res) => {
+  app.delete('/api/users/:id', authenticateToken, requireAdmin, async (req, res) => {
     try {
 
       const { id } = req.params;
@@ -1396,7 +1518,7 @@ app.delete(
   // GET PERMISSIONS
   // =======================================
 
-  app.get('/api/permissions', authenticateToken, async (req, res) => {
+  app.get('/api/permissions', authenticateToken, requireAdmin, async (req, res) => {
     try {
 
       const [permissions] = await pool.execute(`
@@ -1416,7 +1538,7 @@ app.delete(
       console.error(error);
 
       res.status(500).json({
-        error: error.message
+        error: 'Database unavailable'
       });
 
     }
@@ -1444,7 +1566,7 @@ app.delete(
 
       res.status(500).json({
         ok: false,
-        error: error.message
+        error: 'Database unavailable'
       });
     }
   });

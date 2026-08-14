@@ -36,7 +36,11 @@ Use este checklist para garantir que tudo está pronto antes de fazer upload par
      DB_PASSWORD=sua_senha_mysql
      DB_NAME=seu_banco_criado
      DB_PORT=3306
-     JWT_SECRET=uma_chave_secreta_forte_e_aleatória
+     JWT_SECRET=uma_chave_aleatória_com_pelo_menos_64_caracteres
+     APP_ORIGIN=https://seu-dominio.com
+     JWT_ISSUER=volscar
+     JWT_AUDIENCE=volscar-web
+     NODE_ENV=production
      PORT=3000
      ```
 

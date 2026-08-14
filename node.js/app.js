@@ -7,7 +7,6 @@ let authToken = null;
 
 const authStorageKey  = "carManagerAuth";
 const tokenStorageKey = "carManagerToken";
-const settingsPassword = "352155++";
 
 /* ── DOM refs ── */
 const loginScreen           = document.getElementById("loginScreen");
@@ -258,6 +257,20 @@ async function updateCarData(id, data) {
   return await response.json();
 }
 
+async function confirmSettingsPassword(password) {
+  const response = await apiFetch('/auth/confirm-password', {
+    method: 'POST',
+    body: JSON.stringify({ password })
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || 'Não foi possível confirmar as credenciais.');
+  }
+
+  return response.json();
+}
+
 async function saveCarExit(id, data) {
   const response = await apiFetch(`/cars/${id}/exit`, {
     method: 'PUT',
@@ -280,8 +293,6 @@ async function deleteCarData(id) {
 }
 
 function setAuth(user) {
-  console.log("CURRENT USER APÓS LOGIN"); // 29-07-2026
-  console.log(currentUser); // 29-07-2026
   currentUser = user;
   localStorage.setItem(authStorageKey, JSON.stringify(user));
 }
@@ -1564,8 +1575,6 @@ if (activeTabName) {
    APP INIT / AUTH
    ========================================================== */
 async function renderApp() {
-  console.log("renderApp()"); // 29-07-2026
-  console.log(currentUser); // 29-07-2026
   await refreshAppData();
   setActiveTab("consulta");
 }
@@ -2064,15 +2073,12 @@ loginButton.addEventListener("click", async () => {
       body: JSON.stringify({ username, password })
     });
 
-if (!response.ok) {
-  const txt = await response.text();
-  console.log(txt);
-  throw new Error('Login failed');
-}
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || 'Login failed');
+    }
 
     const data = await response.json();
-    console.log("LOGIN RESPONSE"); // 29-07-2026
-    console.log(data); // 29-07-2026
     setAuthToken(data.token);
     setAuth(data.user);
     loginError.textContent = "";
@@ -2160,13 +2166,25 @@ userForm.addEventListener("submit", async e => {
   }
 });
 
-settingsAuthForm.addEventListener("submit", e => {
+settingsAuthForm.addEventListener("submit", async e => {
   e.preventDefault();
   if (currentUser.role !== "admin") { settingsError.textContent = "Acesso negado: somente administrador pode abrir configurações."; return; }
-  if (settingsPasswordInput.value.trim() !== settingsPassword) { settingsError.textContent = "Senha incorreta."; return; }
-  settingsAuthorized = true;
-  closeSettingsAuthModal();
-  setActiveTab("settings");
+  const submitButton = settingsAuthForm.querySelector('button[type="submit"]');
+  submitButton.disabled = true;
+  settingsError.textContent = "Verificando...";
+
+  try {
+    await confirmSettingsPassword(settingsPasswordInput.value);
+    settingsAuthorized = true;
+    closeSettingsAuthModal();
+    setActiveTab("settings");
+  } catch (error) {
+    settingsAuthorized = false;
+    settingsError.textContent = error.message || "Credenciais inválidas.";
+    settingsPasswordInput.select();
+  } finally {
+    submitButton.disabled = false;
+  }
 });
 
 closeSettingsAuth.addEventListener("click",  closeSettingsAuthModal);

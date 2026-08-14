@@ -43,7 +43,11 @@ DB_USER=seu_usuario
 DB_PASSWORD=sua_senha
 DB_NAME=vw_fleet_manager
 DB_PORT=3306
-JWT_SECRET=uma_chave_secreta_forte
+JWT_SECRET=uma_chave_aleatoria_com_pelo_menos_64_caracteres
+APP_ORIGIN=https://seu-dominio.com
+JWT_ISSUER=volscar
+JWT_AUDIENCE=volscar-web
+NODE_ENV=production
 PORT=3000
 ```
 
