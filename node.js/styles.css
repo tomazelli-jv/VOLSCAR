@@ -2253,3 +2253,270 @@ td {
     color:#a66a00;
     border:1px solid #ffd86a;
 }
+
+/* =====================================================
+   CAMADA DE ACABAMENTO — MOTION & MICROINTERAÇÕES
+   ===================================================== */
+:root {
+  --ease-out-expo: cubic-bezier(.16, 1, .3, 1);
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+  --focus-ring: 0 0 0 4px rgba(26, 86, 196, .16);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(26, 86, 196, .08), transparent 30rem),
+    linear-gradient(180deg, #f6f8fb 0%, var(--bg) 28rem);
+}
+
+button, a, input, select { -webkit-tap-highlight-color: transparent; }
+button { position: relative; overflow: hidden; }
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--vw-blue-light);
+  outline-offset: 3px;
+}
+
+/* Login cinematográfico, sem comprometer a leitura */
+.login-bg-art::before {
+  animation: gridDrift 24s linear infinite;
+  mask-image: linear-gradient(to right, #000 0%, rgba(0,0,0,.45) 70%, transparent 100%);
+}
+
+.login-bg-art::after {
+  animation: ambientOrb 9s ease-in-out infinite alternate;
+  filter: blur(2px);
+}
+
+.login-left::after {
+  content: '';
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  top: 8%;
+  left: -260px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 50%;
+  box-shadow: 0 0 0 60px rgba(255,255,255,.018), 0 0 0 130px rgba(255,255,255,.012);
+  pointer-events: none;
+}
+
+.login-vw-mark {
+  filter: drop-shadow(0 16px 30px rgba(0,0,0,.28));
+  animation: loginReveal .8s var(--ease-out-expo) both;
+}
+
+.login-headline { animation: loginReveal .8s .08s var(--ease-out-expo) both; }
+.login-divider  { animation: dividerReveal .75s .18s var(--ease-out-expo) both; }
+.login-desc     { animation: loginReveal .8s .22s var(--ease-out-expo) both; }
+.login-car-line { animation: loginReveal .8s .32s var(--ease-out-expo) both; }
+.login-card     { animation: cardReveal .8s .12s var(--ease-out-expo) both; }
+
+.login-right::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 1px;
+  background: linear-gradient(transparent, rgba(26,86,196,.38), transparent);
+}
+
+.field-group input {
+  transition: border-color .25s, box-shadow .25s, background .25s, transform .25s var(--ease-out-expo);
+}
+.field-group input:hover { border-color: #bcc6d6; background: #fff; }
+.field-group input:focus { transform: translateY(-1px); }
+
+.login-btn,
+#newCarButton,
+.btn-primary,
+.modal-actions button[type="submit"] {
+  isolation: isolate;
+  box-shadow: 0 8px 18px rgba(0,30,80,.16);
+}
+
+.login-btn::after,
+#newCarButton::after,
+.btn-primary::after,
+.modal-actions button[type="submit"]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,.28) 45%, transparent 70%);
+  transform: translateX(-130%);
+  transition: transform .65s var(--ease-out-expo);
+}
+
+.login-btn:hover::after,
+#newCarButton:hover::after,
+.btn-primary:hover::after,
+.modal-actions button[type="submit"]:hover::after { transform: translateX(130%); }
+
+/* Aplicação */
+header {
+  background: linear-gradient(115deg, #00183f, var(--vw-blue) 46%, #082e68);
+  box-shadow: 0 12px 30px rgba(0,30,80,.18);
+}
+
+.brand-logo img {
+  transition: transform .45s var(--ease-spring), filter .3s;
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,.24));
+}
+.brand-logo:hover img { transform: scale(1.08) rotate(-3deg); }
+
+.notification-bell { transition: transform .35s var(--ease-spring), background .25s; }
+.notification-bell:hover { transform: rotate(10deg) scale(1.08); }
+.notification-badge { animation: badgePulse 2.2s ease-in-out infinite; }
+
+.nav-bar {
+  background: rgba(0,30,80,.98);
+  box-shadow: 0 1px 0 rgba(255,255,255,.05) inset;
+}
+.tab-button { transition: color .25s, background .25s, transform .25s var(--ease-out-expo); }
+.tab-button:hover { background: rgba(255,255,255,.045); transform: translateY(-1px); }
+.tab-button::after { height: 3px; box-shadow: 0 -2px 10px rgba(26,86,196,.75); }
+
+.app-message:not(.hidden) { animation: messageIn .45s var(--ease-spring) both; }
+
+.panel:not(.hidden) {
+  animation: panelReveal .55s var(--ease-out-expo) both;
+  box-shadow: 0 12px 40px rgba(0,30,80,.09), 0 1px 2px rgba(0,30,80,.06);
+}
+.panel-header {
+  background: linear-gradient(135deg, rgba(255,255,255,1), rgba(247,249,252,.82));
+}
+
+.filters input,
+.filters select {
+  transition: border-color .25s, box-shadow .25s, transform .25s var(--ease-out-expo);
+}
+.filters input:hover,
+.filters select:hover { transform: translateY(-1px); border-color: #bcc6d6; }
+
+tbody tr { transition: background .2s, transform .25s var(--ease-out-expo), box-shadow .25s; }
+tbody tr:hover {
+  background: #f7faff;
+  box-shadow: inset 3px 0 0 var(--vw-blue-light);
+}
+
+.actions button,
+.car-card-actions button,
+.event-list-actions button,
+.day-event-actions button {
+  transition: transform .22s var(--ease-spring), box-shadow .22s, background .22s;
+}
+.actions button:hover,
+.car-card-actions button:hover,
+.event-list-actions button:hover,
+.day-event-actions button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 16px rgba(0,30,80,.12);
+}
+.actions button:active,
+.car-card-actions button:active,
+.event-list-actions button:active,
+.day-event-actions button:active { transform: translateY(0) scale(.97); }
+
+.stat-card,
+.chart-card,
+.car-card,
+.event-list-item,
+.day-event-item {
+  transition: transform .3s var(--ease-out-expo), box-shadow .3s, border-color .3s;
+}
+.stat-card::after,
+.chart-card::after {
+  content: '';
+  position: absolute;
+  width: 130px;
+  height: 220%;
+  top: -60%;
+  left: -180px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.7), transparent);
+  transform: rotate(18deg);
+  transition: left .75s var(--ease-out-expo);
+  pointer-events: none;
+}
+.stat-card:hover::after,
+.chart-card:hover::after { left: calc(100% + 80px); }
+.chart-card { position: relative; overflow: hidden; }
+.chart-card:hover,
+.car-card:hover,
+.event-list-item:hover,
+.day-event-item:hover {
+  transform: translateY(-3px);
+  border-color: rgba(26,86,196,.24);
+  box-shadow: 0 14px 30px rgba(0,30,80,.11);
+}
+
+.status-pill::before { animation: statusBreathe 2.4s ease-in-out infinite; }
+
+.modal {
+  animation: fadeIn .22s ease both;
+  backdrop-filter: blur(8px) saturate(.9);
+  -webkit-backdrop-filter: blur(8px) saturate(.9);
+}
+.modal-content { animation: modalReveal .42s var(--ease-out-expo) both; }
+.modal-top { background: linear-gradient(115deg, #00183f, var(--vw-blue-mid)); }
+
+@keyframes gridDrift {
+  to { background-position: 60px 60px; }
+}
+@keyframes ambientOrb {
+  from { transform: translate3d(-20px, 10px, 0) scale(.95); opacity: .72; }
+  to { transform: translate3d(35px, -25px, 0) scale(1.08); opacity: 1; }
+}
+@keyframes loginReveal {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes cardReveal {
+  from { opacity: 0; transform: translateX(32px) scale(.98); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes dividerReveal {
+  from { opacity: 0; transform: scaleX(0); transform-origin: left; }
+  to { opacity: 1; transform: scaleX(1); transform-origin: left; }
+}
+@keyframes panelReveal {
+  from { opacity: 0; transform: translateY(14px) scale(.995); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes modalReveal {
+  from { opacity: 0; transform: translateY(24px) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes messageIn {
+  from { opacity: 0; transform: translateY(-8px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes badgePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(228,0,43,.25); }
+  50% { box-shadow: 0 0 0 6px rgba(228,0,43,0); }
+}
+@keyframes statusBreathe {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.35); opacity: .72; }
+}
+
+@media (max-width: 768px) {
+  body { background: #f3f5f8; }
+  .panel:not(.hidden) { animation-duration: .35s; }
+  .car-card:hover,
+  .event-list-item:hover,
+  .day-event-item:hover { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
