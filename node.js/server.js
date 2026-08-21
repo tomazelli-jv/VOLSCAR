@@ -1021,6 +1021,116 @@ app.delete(
 });
 
   // =======================================
+  // CLIENTES E HISTORICO OPERACIONAL
+  // =======================================
+  const clientText = (value, max) => {
+    const normalized = String(value ?? '').trim();
+    return normalized ? normalized.slice(0, max) : null;
+  };
+
+  app.get('/api/clients', authenticateToken, requirePermission('view_clients'), async (req, res) => {
+    try {
+      const [rows] = await pool.execute(`
+        SELECT c.id, c.name, c.document, c.phone, c.email, c.notes,
+          COUNT(h.id) AS historyCount,
+          DATE_FORMAT(MAX(h.movement_date), '%Y-%m-%d') AS lastActivity
+        FROM clients c
+        LEFT JOIN client_history h ON h.client_id = c.id
+        GROUP BY c.id
+        ORDER BY c.name
+      `);
+      res.json(rows);
+    } catch (error) {
+      console.error('Error loading clients:', error);
+      res.status(500).json({ error: 'Erro ao carregar clientes. Verifique a migracao do banco.' });
+    }
+  });
+
+  app.post('/api/clients', authenticateToken, requirePermission('create_clients'), async (req, res) => {
+    const name = clientText(req.body.name, 150);
+    if (!name) return res.status(400).json({ error: 'Nome do cliente e obrigatorio.' });
+    try {
+      const [result] = await pool.execute(
+        'INSERT INTO clients (name, document, phone, email, notes) VALUES (?, ?, ?, ?, ?)',
+        [name, clientText(req.body.document, 30), clientText(req.body.phone, 30), clientText(req.body.email, 150), clientText(req.body.notes, 5000)]
+      );
+      res.status(201).json({ id: result.insertId });
+    } catch (error) {
+      if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Documento ja cadastrado.' });
+      console.error('Error creating client:', error);
+      res.status(500).json({ error: 'Erro ao cadastrar cliente.' });
+    }
+  });
+
+  app.put('/api/clients/:id', authenticateToken, requirePermission('edit_clients'), async (req, res) => {
+    const name = clientText(req.body.name, 150);
+    if (!name) return res.status(400).json({ error: 'Nome do cliente e obrigatorio.' });
+    try {
+      const [result] = await pool.execute(
+        'UPDATE clients SET name=?, document=?, phone=?, email=?, notes=? WHERE id=?',
+        [name, clientText(req.body.document, 30), clientText(req.body.phone, 30), clientText(req.body.email, 150), clientText(req.body.notes, 5000), req.params.id]
+      );
+      if (!result.affectedRows) return res.status(404).json({ error: 'Cliente nao encontrado.' });
+      res.json({ message: 'Cliente atualizado.' });
+    } catch (error) {
+      if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Documento ja cadastrado.' });
+      console.error('Error updating client:', error);
+      res.status(500).json({ error: 'Erro ao atualizar cliente.' });
+    }
+  });
+
+  app.delete('/api/clients/:id', authenticateToken, requirePermission('delete_clients'), async (req, res) => {
+    try {
+      const [result] = await pool.execute('DELETE FROM clients WHERE id=?', [req.params.id]);
+      if (!result.affectedRows) return res.status(404).json({ error: 'Cliente nao encontrado.' });
+      res.json({ message: 'Cliente e historico removidos.' });
+    } catch (error) { console.error(error); res.status(500).json({ error: 'Erro ao excluir cliente.' }); }
+  });
+
+  app.get('/api/clients/:id/history', authenticateToken, requirePermission('view_clients'), async (req, res) => {
+    try {
+      const [rows] = await pool.execute(`
+        SELECT id, client_id AS clientId, car_id AS carId, vehicle_name AS vehicleName,
+          vehicle_plate AS vehiclePlate, movement_type AS movementType,
+          DATE_FORMAT(movement_date, '%Y-%m-%d') AS movementDate, responsible, notes
+        FROM client_history WHERE client_id=? ORDER BY movement_date DESC, id DESC
+      `, [req.params.id]);
+      res.json(rows);
+    } catch (error) { console.error(error); res.status(500).json({ error: 'Erro ao carregar historico.' }); }
+  });
+
+  app.post('/api/clients/:id/history', authenticateToken, requirePermission('edit_clients'), async (req, res) => {
+    const allowedTypes = ['interesse', 'reserva', 'retirada', 'devolucao', 'observacao'];
+    const movementDate = clientText(req.body.movementDate, 10);
+    if (!movementDate || !/^\d{4}-\d{2}-\d{2}$/.test(movementDate)) return res.status(400).json({ error: 'Data obrigatoria.' });
+    try {
+      const carId = req.body.carId ? Number(req.body.carId) : null;
+      let vehicleName = clientText(req.body.vehicleName, 150);
+      let vehiclePlate = clientText(req.body.vehiclePlate, 20);
+      if (carId) {
+        const [cars] = await pool.execute('SELECT name, plate FROM cars WHERE id=? LIMIT 1', [carId]);
+        if (!cars.length) return res.status(404).json({ error: 'Veiculo nao encontrado.' });
+        vehicleName = cars[0].name;
+        vehiclePlate = cars[0].plate;
+      }
+      const [result] = await pool.execute(`INSERT INTO client_history
+        (client_id, car_id, vehicle_name, vehicle_plate, movement_type, movement_date, responsible, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [req.params.id, carId, vehicleName, vehiclePlate,
+        allowedTypes.includes(req.body.movementType) ? req.body.movementType : 'observacao', movementDate,
+        clientText(req.body.responsible, 100), clientText(req.body.notes, 5000)]);
+      res.status(201).json({ id: result.insertId });
+    } catch (error) { console.error(error); res.status(500).json({ error: 'Erro ao registrar historico.' }); }
+  });
+
+  app.delete('/api/client-history/:id', authenticateToken, requirePermission('edit_clients'), async (req, res) => {
+    try {
+      const [result] = await pool.execute('DELETE FROM client_history WHERE id=?', [req.params.id]);
+      if (!result.affectedRows) return res.status(404).json({ error: 'Registro nao encontrado.' });
+      res.json({ message: 'Registro removido.' });
+    } catch (error) { console.error(error); res.status(500).json({ error: 'Erro ao remover registro.' }); }
+  });
+
+  // =======================================
   //  USERS
   // =======================================
 

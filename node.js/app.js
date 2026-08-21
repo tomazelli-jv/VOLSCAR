@@ -150,6 +150,7 @@ let currentUser        = null;
 let cars               = [];
 let clients            = [];
 let clientHistory      = [];
+let clientsLoadError   = "";
 let editingClientId    = null;
 let activeClientId     = null;
 let users              = [];
@@ -1173,12 +1174,26 @@ async function checkScheduledDepartures() {
 }
 
 async function clientApi(path, options = {}) { const response = await apiFetch(path, options); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || 'Erro na operaÃ§Ã£o.'); return data; }
-async function loadClients() { clients = await clientApi('/clients'); }
+async function loadClients() {
+  try {
+    clients = await clientApi('/clients');
+    clientsLoadError = '';
+  } catch (error) {
+    clients = [];
+    clientsLoadError = error.message || 'Erro ao carregar clientes.';
+    console.error('Error loading clients:', error);
+  }
+}
 const safe = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
 const dateOnly = value => value ? String(value).slice(0,10).split('-').reverse().join('/') : 'â€”';
 
 function renderClients() {
   if (!clientSearch || !clientSummary || !clientsTableBody) return;
+  if (clientsLoadError) {
+    clientSummary.innerHTML = '';
+    clientsTableBody.innerHTML = `<tr><td colspan="6" class="empty-state">MÃ³dulo de clientes indisponÃ­vel: ${safe(clientsLoadError)}</td></tr>`;
+    return;
+  }
   const q = (clientSearch.value || '').trim().toLowerCase();
   const list = clients.filter(c => [c.name,c.document,c.phone,c.email].some(v => String(v||'').toLowerCase().includes(q)));
   clientSummary.innerHTML = `<div><strong>${clients.length}</strong><span> clientes cadastrados</span></div><div><strong>${clients.reduce((n,c)=>n+Number(c.historyCount||0),0)}</strong><span> movimentaÃ§Ãµes registradas</span></div>`;
