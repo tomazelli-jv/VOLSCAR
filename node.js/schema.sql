@@ -60,6 +60,41 @@ CREATE TABLE IF NOT EXISTS events (
   FOREIGN KEY (car_id) REFERENCES cars(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS clients (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(150) NOT NULL,
+  document VARCHAR(30) UNIQUE,
+  phone VARCHAR(30),
+  email VARCHAR(150),
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_clients_name (name)
+);
+
+CREATE TABLE IF NOT EXISTS client_history (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  client_id INT NOT NULL,
+  car_id INT NULL,
+  vehicle_name VARCHAR(150),
+  vehicle_plate VARCHAR(20),
+  movement_type ENUM('interesse','reserva','retirada','devolucao','observacao') NOT NULL DEFAULT 'observacao',
+  movement_date DATE NOT NULL,
+  responsible VARCHAR(100),
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
+  FOREIGN KEY (car_id) REFERENCES cars(id) ON DELETE SET NULL,
+  INDEX idx_client_history_date (client_id, movement_date)
+);
+
+INSERT INTO permissions (name, description, category) VALUES
+('view_clients', 'Ver clientes e historicos', 'clients'),
+('create_clients', 'Cadastrar clientes', 'clients'),
+('edit_clients', 'Editar clientes e historicos', 'clients'),
+('delete_clients', 'Excluir clientes e historicos', 'clients')
+ON DUPLICATE KEY UPDATE description = VALUES(description), category = VALUES(category);
+
 -- Insert sample permissions
 INSERT INTO permissions (name, description, category) VALUES
 ('view_cars', 'Ver listagem de veículos', 'cars'),

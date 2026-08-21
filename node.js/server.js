@@ -10,7 +10,7 @@
   const pool = require('./config/database');
   const { normalizePermissionIds, validateUserPayload } = require('./utils/userValidation');
 
-  const app = express();
+  const app = express();faaç
   app.set('trust proxy', 1);
 
   app.use((req, res, next) => {
