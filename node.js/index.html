@@ -83,6 +83,7 @@
     <nav class="nav-bar">
       <button class="tab-button active" data-tab="consulta">Consulta</button>
       <button class="tab-button" data-tab="agenda">Agenda</button>
+      <button class="tab-button" data-tab="clientes">Clientes</button>
       <button class="tab-button" data-tab="dashboard">Dashboard</button>
       <button class="tab-button" data-tab="settings">Configurações</button>
     </nav>
@@ -216,6 +217,14 @@
         <div class="agenda-events-list" id="agendaEventsList"></div>
       </section>
 
+      <!-- CLIENTES -->
+      <section class="panel hidden" id="clientsPanel">
+        <div class="panel-header"><div><h2>Clientes</h2><p>Cadastro e histórico operacional relacionado ao estoque</p></div><button id="newClientButton">+ Novo Cliente</button></div>
+        <div class="filters"><input id="clientSearch" placeholder="Buscar nome, documento, telefone ou e-mail" /></div>
+        <div class="client-summary" id="clientSummary"></div>
+        <div class="table-wrapper"><table class="responsive-table"><thead><tr><th>Nome</th><th>Documento</th><th>Contato</th><th>Histórico</th><th>Última atividade</th><th>Ações</th></tr></thead><tbody id="clientsTableBody"></tbody></table></div>
+      </section>
+
       <!-- CONFIGURAÇÕES -->
       <section class="panel hidden" id="settingsPanel">
         <div class="panel-header">
@@ -253,6 +262,11 @@
       📅
     </button>
   </div>
+
+  <!-- MODAIS: CLIENTES -->
+  <div class="modal hidden" id="clientModal"><div class="modal-content"><div class="modal-top"><h2 id="clientModalTitle">Novo Cliente</h2><button class="close-modal" id="closeClientModal">×</button></div><div class="modal-body"><form id="clientForm"><div class="modal-grid"><div><label>Nome *</label><input id="clientName" maxlength="150" required /></div><div><label>CPF/CNPJ</label><input id="clientDocument" maxlength="30" /></div><div><label>Telefone</label><input id="clientPhone" maxlength="30" /></div><div><label>E-mail</label><input id="clientEmail" type="email" maxlength="150" /></div><div class="modal-full-width"><label>Observações</label><textarea id="clientNotes" rows="3"></textarea></div></div><p class="login-error" id="clientFormError"></p><div class="modal-actions"><button type="button" class="secondary" id="cancelClientModal">Cancelar</button><button type="submit">Salvar</button></div></form></div></div></div>
+  <div class="modal hidden" id="clientHistoryModal"><div class="modal-content"><div class="modal-top"><div><h2 id="clientHistoryTitle">Histórico</h2><p id="clientHistorySubtitle"></p></div><button class="close-modal" id="closeClientHistory">×</button></div><div class="modal-body"><button id="newHistoryButton">+ Nova movimentação</button><div class="history-list" id="clientHistoryList"></div></div></div></div>
+  <div class="modal hidden" id="historyModal"><div class="modal-content"><div class="modal-top"><h2>Nova movimentação</h2><button class="close-modal" id="closeHistoryModal">×</button></div><div class="modal-body"><form id="historyForm"><div class="modal-grid"><div><label>Tipo *</label><select id="historyType"><option value="interesse">Interesse</option><option value="reserva">Reserva</option><option value="retirada">Retirada</option><option value="devolucao">Devolução</option><option value="observacao">Observação</option></select></div><div><label>Data *</label><input id="historyDate" type="date" required /></div><div class="modal-full-width"><label>Veículo do estoque</label><select id="historyCar"><option value="">Sem veículo vinculado</option></select></div><div><label>Veículo (manual)</label><input id="historyVehicleName" /></div><div><label>Placa</label><input id="historyVehiclePlate" /></div><div><label>Responsável</label><input id="historyResponsible" /></div><div class="modal-full-width"><label>Observações</label><textarea id="historyNotes" rows="3"></textarea></div></div><p class="login-error" id="historyFormError"></p><div class="modal-actions"><button type="button" class="secondary" id="cancelHistoryModal">Cancelar</button><button type="submit">Salvar</button></div></form></div></div></div>
 
   <!-- MODAL: VEÍCULO -->
   <div class="modal hidden" id="carModal">
@@ -589,7 +603,7 @@
 
 </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20260821-clients-fix"></script>
 
 </body>
 </html>

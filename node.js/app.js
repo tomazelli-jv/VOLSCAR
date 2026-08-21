@@ -806,7 +806,7 @@ function updatePermissionUI() {
   addEventFromDay.style.display = canCreate("events")
     ? "inline-flex"
     : "none";
-  newClientButton.style.display = canCreate("clients") ? "inline-flex" : "none";
+  if (newClientButton) newClientButton.style.display = canCreate("clients") ? "inline-flex" : "none";
 
   // Permissões das abas
   const permissionMap = {
@@ -855,7 +855,7 @@ function updatePermissionUI() {
       inventoryPanel.classList.add("hidden");
       dashboardPanel.classList.add("hidden");
       agendaPanel.classList.add("hidden");
-      clientsPanel.classList.add("hidden");
+      if (clientsPanel) clientsPanel.classList.add("hidden");
       settingsPanel.classList.add("hidden");
 
       showAppMessage(
@@ -901,7 +901,7 @@ function setActiveTab(tabName) {
   inventoryPanel.classList.toggle("hidden", tabName !== "consulta");
   dashboardPanel.classList.toggle("hidden", tabName !== "dashboard");
   agendaPanel.classList.toggle("hidden", tabName !== "agenda");
-  clientsPanel.classList.toggle("hidden", tabName !== "clientes");
+  if (clientsPanel) clientsPanel.classList.toggle("hidden", tabName !== "clientes");
   settingsPanel.classList.toggle("hidden", tabName !== "settings");
 
   tabButtons.forEach(button =>
@@ -1178,6 +1178,7 @@ const safe = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;'
 const dateOnly = value => value ? String(value).slice(0,10).split('-').reverse().join('/') : 'â€”';
 
 function renderClients() {
+  if (!clientSearch || !clientSummary || !clientsTableBody) return;
   const q = (clientSearch.value || '').trim().toLowerCase();
   const list = clients.filter(c => [c.name,c.document,c.phone,c.email].some(v => String(v||'').toLowerCase().includes(q)));
   clientSummary.innerHTML = `<div><strong>${clients.length}</strong><span> clientes cadastrados</span></div><div><strong>${clients.reduce((n,c)=>n+Number(c.historyCount||0),0)}</strong><span> movimentaÃ§Ãµes registradas</span></div>`;
@@ -2139,6 +2140,7 @@ cancelModal.addEventListener("click",  closeModalWindow);
 filterText.addEventListener("input",   renderCarsTable);
 filterStatus.addEventListener("change", renderCarsTable);
 
+if (newClientButton) {
 newClientButton.addEventListener('click',()=>openClientEditor());
 clientSearch.addEventListener('input',renderClients);
 closeClientModal.addEventListener('click',closeClientEditor);cancelClientModal.addEventListener('click',closeClientEditor);
@@ -2148,6 +2150,7 @@ closeHistoryModal.addEventListener('click',()=>historyModal.classList.add('hidde
 historyCar.addEventListener('change',()=>{const c=cars.find(x=>Number(x.id)===Number(historyCar.value));if(c){historyVehicleName.value=c.name||'';historyVehiclePlate.value=c.plate||'';}});
 clientForm.addEventListener('submit',async e=>{e.preventDefault();clientFormError.textContent='';try{await clientApi(editingClientId?`/clients/${editingClientId}`:'/clients',{method:editingClientId?'PUT':'POST',body:JSON.stringify({name:clientName.value,document:clientDocument.value,phone:clientPhone.value,email:clientEmail.value,notes:clientNotes.value})});closeClientEditor();await loadClients();renderClients();}catch(error){clientFormError.textContent=error.message;}});
 historyForm.addEventListener('submit',async e=>{e.preventDefault();historyFormError.textContent='';try{await clientApi(`/clients/${activeClientId}/history`,{method:'POST',body:JSON.stringify({movementType:historyType.value,movementDate:historyDate.value,carId:historyCar.value||null,vehicleName:historyVehicleName.value,vehiclePlate:historyVehiclePlate.value,responsible:historyResponsible.value,notes:historyNotes.value})});historyModal.classList.add('hidden');clientHistory=await clientApi(`/clients/${activeClientId}/history`);renderClientHistory();await loadClients();renderClients();}catch(error){historyFormError.textContent=error.message;}});
+}
 
 // Eventos de Usuários
 newUserButton.addEventListener("click", () => openUserModal());
