@@ -6,7 +6,7 @@
   <title>VW · Gerenciador de Frota</title>
   <link rel="icon" type="image/png" href="img/QUALIDADE-FAVICON.png?v=20260813-3" />
   <link rel="apple-touch-icon" href="img/QUALIDADE-FAVICON.png?v=20260813-3" />
-  <link rel="stylesheet" href="styles.css?v=20260814-effects" />
+  <link rel="stylesheet" href="styles.css?v=20260821-client-profile" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -223,6 +223,18 @@
         <div class="filters"><input id="clientSearch" placeholder="Buscar nome, documento, telefone ou e-mail" /></div>
         <div class="client-summary" id="clientSummary"></div>
         <div class="table-wrapper"><table class="responsive-table"><thead><tr><th>Nome</th><th>Documento</th><th>Contato</th><th>Histórico</th><th>Última atividade</th><th>Ações</th></tr></thead><tbody id="clientsTableBody"></tbody></table></div>
+      </section>
+
+      <section class="panel hidden client-profile-panel" id="clientProfilePanel">
+        <div class="profile-page-header"><div><span class="profile-eyebrow">CLIENTES</span><h2>Perfil do cliente</h2><p>Resumo cadastral e histórico operacional vinculado ao estoque.</p></div><button class="client-btn client-btn--secondary" id="backToClientsButton">← Voltar</button></div>
+        <div class="client-profile-grid">
+          <aside class="client-identity-card"><div class="client-cover"></div><div class="client-avatar" id="clientProfileAvatar">CL</div><div class="client-identity-content"><span class="client-status-pill">● Cadastrado</span><h3 id="clientProfileName">Cliente</h3><span class="client-document" id="clientProfileDocument">Documento não informado</span><div class="client-contact-actions"><a class="client-btn client-btn--secondary" id="clientEmailLink">E-mail</a><a class="client-btn client-btn--secondary" id="clientPhoneLink">Ligar</a></div></div></aside>
+          <div class="client-profile-main">
+            <div class="client-profile-stats"><div class="profile-stat"><span>REGISTROS</span><strong id="clientProfileHistoryCount">0</strong><small>movimentações</small></div><div class="profile-stat"><span>VEÍCULOS</span><strong id="clientProfileVehicleCount">0</strong><small>relacionados</small></div><div class="profile-stat"><span>ÚLTIMA ATIVIDADE</span><strong id="clientProfileLastActivity">—</strong><small>registro mais recente</small></div></div>
+            <section class="profile-section"><div class="profile-section-header"><div><h3>Informações de contato</h3><p id="clientProfileContact">Nenhum contato informado</p></div><button class="client-btn client-btn--secondary" id="editClientProfileButton">Editar cadastro</button></div><p class="client-profile-notes" id="clientProfileNotes">Sem observações cadastradas.</p></section>
+            <section class="profile-section"><div class="profile-section-header"><div><h3>Histórico operacional</h3><p>Acompanhamento relacionado aos veículos do estoque.</p></div><button class="client-btn client-btn--primary" id="addProfileHistoryButton">+ Nova movimentação</button></div><div class="history-list profile-history-list" id="clientProfileHistoryList"></div></section>
+          </div>
+        </div>
       </section>
 
       <!-- CONFIGURAÇÕES -->
@@ -603,7 +615,7 @@
 
 </div>
 
-  <script src="app.js?v=20260821-clients-fix"></script>
+  <script src="app.js?v=20260821-client-profile"></script>
 
 </body>
 </html>

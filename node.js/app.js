@@ -54,6 +54,7 @@ const clientsPanel = document.getElementById("clientsPanel"), newClientButton = 
 const clientModal = document.getElementById("clientModal"), clientModalTitle = document.getElementById("clientModalTitle"), closeClientModal = document.getElementById("closeClientModal"), cancelClientModal = document.getElementById("cancelClientModal"), clientForm = document.getElementById("clientForm"), clientName = document.getElementById("clientName"), clientDocument = document.getElementById("clientDocument"), clientPhone = document.getElementById("clientPhone"), clientEmail = document.getElementById("clientEmail"), clientNotes = document.getElementById("clientNotes"), clientFormError = document.getElementById("clientFormError");
 const clientHistoryModal = document.getElementById("clientHistoryModal"), clientHistoryTitle = document.getElementById("clientHistoryTitle"), clientHistorySubtitle = document.getElementById("clientHistorySubtitle"), closeClientHistory = document.getElementById("closeClientHistory"), newHistoryButton = document.getElementById("newHistoryButton"), clientHistoryList = document.getElementById("clientHistoryList");
 const historyModal = document.getElementById("historyModal"), closeHistoryModal = document.getElementById("closeHistoryModal"), cancelHistoryModal = document.getElementById("cancelHistoryModal"), historyForm = document.getElementById("historyForm"), historyType = document.getElementById("historyType"), historyDate = document.getElementById("historyDate"), historyCar = document.getElementById("historyCar"), historyVehicleName = document.getElementById("historyVehicleName"), historyVehiclePlate = document.getElementById("historyVehiclePlate"), historyResponsible = document.getElementById("historyResponsible"), historyNotes = document.getElementById("historyNotes"), historyFormError = document.getElementById("historyFormError");
+const clientProfilePanel = document.getElementById('clientProfilePanel'), backToClientsButton = document.getElementById('backToClientsButton'), clientProfileAvatar = document.getElementById('clientProfileAvatar'), clientProfileName = document.getElementById('clientProfileName'), clientProfileDocument = document.getElementById('clientProfileDocument'), clientEmailLink = document.getElementById('clientEmailLink'), clientPhoneLink = document.getElementById('clientPhoneLink'), clientProfileHistoryCount = document.getElementById('clientProfileHistoryCount'), clientProfileVehicleCount = document.getElementById('clientProfileVehicleCount'), clientProfileLastActivity = document.getElementById('clientProfileLastActivity'), clientProfileContact = document.getElementById('clientProfileContact'), clientProfileNotes = document.getElementById('clientProfileNotes'), editClientProfileButton = document.getElementById('editClientProfileButton'), addProfileHistoryButton = document.getElementById('addProfileHistoryButton'), clientProfileHistoryList = document.getElementById('clientProfileHistoryList');
 const settingsAuthModal     = document.getElementById("settingsAuthModal");
 const closeSettingsAuth     = document.getElementById("closeSettingsAuth");
 const cancelSettingsAuth    = document.getElementById("cancelSettingsAuth");
@@ -903,6 +904,7 @@ function setActiveTab(tabName) {
   dashboardPanel.classList.toggle("hidden", tabName !== "dashboard");
   agendaPanel.classList.toggle("hidden", tabName !== "agenda");
   if (clientsPanel) clientsPanel.classList.toggle("hidden", tabName !== "clientes");
+  if (clientProfilePanel) clientProfilePanel.classList.add("hidden");
   settingsPanel.classList.toggle("hidden", tabName !== "settings");
 
   tabButtons.forEach(button =>
@@ -1185,27 +1187,52 @@ async function loadClients() {
   }
 }
 const safe = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-const dateOnly = value => value ? String(value).slice(0,10).split('-').reverse().join('/') : 'â€”';
+const dateOnly = value => value ? String(value).slice(0,10).split('-').reverse().join('/') : '—';
 
 function renderClients() {
   if (!clientSearch || !clientSummary || !clientsTableBody) return;
   if (clientsLoadError) {
     clientSummary.innerHTML = '';
-    clientsTableBody.innerHTML = `<tr><td colspan="6" class="empty-state">MÃ³dulo de clientes indisponÃ­vel: ${safe(clientsLoadError)}</td></tr>`;
+    clientsTableBody.innerHTML = `<tr><td colspan="6" class="empty-state">Módulo de clientes indisponível: ${safe(clientsLoadError)}</td></tr>`;
     return;
   }
   const q = (clientSearch.value || '').trim().toLowerCase();
   const list = clients.filter(c => [c.name,c.document,c.phone,c.email].some(v => String(v||'').toLowerCase().includes(q)));
-  clientSummary.innerHTML = `<div><strong>${clients.length}</strong><span> clientes cadastrados</span></div><div><strong>${clients.reduce((n,c)=>n+Number(c.historyCount||0),0)}</strong><span> movimentaÃ§Ãµes registradas</span></div>`;
-  clientsTableBody.innerHTML = list.length ? list.map(c => `<tr><td><strong>${safe(c.name)}</strong></td><td>${safe(c.document||'â€”')}</td><td>${safe(c.phone||c.email||'â€”')}</td><td>${Number(c.historyCount||0)}</td><td>${dateOnly(c.lastActivity)}</td><td><div class="client-actions"><button onclick="openClientHistory(${Number(c.id)})">HistÃ³rico</button>${canEdit('clients')?`<button onclick="openClientEditor(${Number(c.id)})">Editar</button>`:''}${canDelete('clients')?`<button class="delete" onclick="deleteClient(${Number(c.id)})">Excluir</button>`:''}</div></td></tr>`).join('') : '<tr><td colspan="6" class="empty-state">Nenhum cliente encontrado.</td></tr>';
+  clientSummary.innerHTML = `<div><strong>${clients.length}</strong><span> clientes cadastrados</span></div><div><strong>${clients.reduce((n,c)=>n+Number(c.historyCount||0),0)}</strong><span> movimentações registradas</span></div>`;
+  clientsTableBody.innerHTML = list.length ? list.map(c => `<tr><td><strong>${safe(c.name)}</strong></td><td>${safe(c.document||'—')}</td><td>${safe(c.phone||c.email||'—')}</td><td>${Number(c.historyCount||0)}</td><td>${dateOnly(c.lastActivity)}</td><td><div class="client-actions"><button class="client-btn client-btn--profile" onclick="openClientProfile(${Number(c.id)})">◉ Ver perfil</button>${canEdit('clients')?`<button class="client-btn client-btn--edit" onclick="openClientEditor(${Number(c.id)})">Editar</button>`:''}${canDelete('clients')?`<button class="client-btn client-btn--delete" onclick="deleteClient(${Number(c.id)})">Excluir</button>`:''}</div></td></tr>`).join('') : '<tr><td colspan="6" class="empty-state">Nenhum cliente encontrado.</td></tr>';
 }
 function openClientEditor(id=null) { editingClientId=id; clientForm.reset(); clientFormError.textContent=''; const c=clients.find(x=>Number(x.id)===Number(id)); clientModalTitle.textContent=c?'Editar cliente':'Novo cliente'; if(c){clientName.value=c.name||'';clientDocument.value=c.document||'';clientPhone.value=c.phone||'';clientEmail.value=c.email||'';clientNotes.value=c.notes||'';} clientModal.classList.remove('hidden'); }
 function closeClientEditor(){clientModal.classList.add('hidden');editingClientId=null;}
 async function deleteClient(id){if(!confirm('Excluir o cliente e todo o seu histÃ³rico?'))return;try{await clientApi(`/clients/${id}`,{method:'DELETE'});await loadClients();renderClients();}catch(e){showAppMessage(e.message);}}
 async function openClientHistory(id){activeClientId=id;const c=clients.find(x=>Number(x.id)===Number(id));clientHistoryTitle.textContent=c?.name||'HistÃ³rico';clientHistorySubtitle.textContent=[c?.document,c?.phone,c?.email].filter(Boolean).join(' â€¢ ');newHistoryButton.style.display=canEdit('clients')?'':'none';clientHistoryModal.classList.remove('hidden');try{clientHistory=await clientApi(`/clients/${id}/history`);renderClientHistory();}catch(e){clientHistoryList.textContent=e.message;}}
 function renderClientHistory(){const labels={interesse:'Interesse',reserva:'Reserva',retirada:'Retirada',devolucao:'DevoluÃ§Ã£o',observacao:'ObservaÃ§Ã£o'};clientHistoryList.innerHTML=clientHistory.length?clientHistory.map(h=>`<article class="history-card"><div><strong>${labels[h.movementType]||safe(h.movementType)}</strong><span>${dateOnly(h.movementDate)}</span></div>${h.vehicleName?`<p>VeÃ­culo: ${safe(h.vehicleName)} ${safe(h.vehiclePlate||'')}</p>`:''}${h.responsible?`<p>ResponsÃ¡vel: ${safe(h.responsible)}</p>`:''}${h.notes?`<p>${safe(h.notes)}</p>`:''}${canEdit('clients')?`<button class="delete" onclick="deleteHistory(${Number(h.id)})">Excluir</button>`:''}</article>`).join(''):'<div class="empty-state">Nenhuma movimentaÃ§Ã£o registrada.</div>';}
+async function openClientProfile(id) {
+  activeClientId = id;
+  const client = clients.find(item => Number(item.id) === Number(id));
+  if (!client || !clientProfilePanel) return;
+  clientsPanel.classList.add('hidden'); clientProfilePanel.classList.remove('hidden');
+  clientProfileName.textContent = client.name;
+  clientProfileAvatar.textContent = client.name.split(/\s+/).slice(0,2).map(part => part[0]).join('').toUpperCase();
+  clientProfileDocument.textContent = client.document || 'Documento não informado';
+  clientProfileContact.textContent = [client.phone, client.email].filter(Boolean).join(' • ') || 'Nenhum contato informado';
+  clientProfileNotes.textContent = client.notes || 'Sem observações cadastradas.';
+  clientEmailLink.hidden = !client.email; clientEmailLink.href = client.email ? `mailto:${client.email}` : '#';
+  clientPhoneLink.hidden = !client.phone; clientPhoneLink.href = client.phone ? `tel:${client.phone.replace(/\D/g,'')}` : '#';
+  editClientProfileButton.style.display = canEdit('clients') ? '' : 'none';
+  addProfileHistoryButton.style.display = canEdit('clients') ? '' : 'none';
+  clientProfileHistoryList.innerHTML = '<div class="empty-state">Carregando histórico...</div>';
+  try { clientHistory = await clientApi(`/clients/${id}/history`); renderClientProfileHistory(); }
+  catch (error) { clientProfileHistoryList.textContent = error.message; }
+}
+function renderClientProfileHistory() {
+  const labels={interesse:'Interesse',reserva:'Reserva',retirada:'Retirada',devolucao:'Devolução',observacao:'Observação'};
+  clientProfileHistoryCount.textContent = clientHistory.length;
+  clientProfileVehicleCount.textContent = new Set(clientHistory.filter(h=>h.vehicleName).map(h=>h.carId||h.vehiclePlate||h.vehicleName)).size;
+  clientProfileLastActivity.textContent = clientHistory.length ? dateOnly(clientHistory[0].movementDate) : '—';
+  clientProfileHistoryList.innerHTML = clientHistory.length ? clientHistory.map(h=>`<article class="history-card profile-timeline-item"><div><span class="history-type">${safe(labels[h.movementType]||h.movementType)}</span><time>${dateOnly(h.movementDate)}</time></div>${h.vehicleName?`<h4>${safe(h.vehicleName)} <small>${safe(h.vehiclePlate||'')}</small></h4>`:''}${h.responsible?`<p>Responsável: ${safe(h.responsible)}</p>`:''}${h.notes?`<p>${safe(h.notes)}</p>`:''}${canEdit('clients')?`<button class="client-btn client-btn--delete" onclick="deleteHistory(${Number(h.id)})">Excluir registro</button>`:''}</article>`).join('') : '<div class="empty-state">Nenhuma movimentação registrada.</div>';
+}
 function openHistoryEditor(){historyForm.reset();historyFormError.textContent='';historyDate.value=new Date().toISOString().slice(0,10);historyCar.innerHTML='<option value="">Sem veÃ­culo vinculado</option>'+cars.map(c=>`<option value="${Number(c.id)}">${safe(c.name)} â€” ${safe(c.plate)}</option>`).join('');historyModal.classList.remove('hidden');}
-async function deleteHistory(id){if(!confirm('Excluir esta movimentaÃ§Ã£o?'))return;await clientApi(`/client-history/${id}`,{method:'DELETE'});clientHistory=await clientApi(`/clients/${activeClientId}/history`);renderClientHistory();await loadClients();renderClients();}
+async function deleteHistory(id){if(!confirm('Excluir esta movimentaÃ§Ã£o?'))return;await clientApi(`/client-history/${id}`,{method:'DELETE'});clientHistory=await clientApi(`/clients/${activeClientId}/history`);if(clientProfilePanel&&!clientProfilePanel.classList.contains('hidden'))renderClientProfileHistory();else renderClientHistory();await loadClients();renderClients();}
 
 function renderCarsTable() {
   carsTableBody.innerHTML = "";
@@ -2161,10 +2188,13 @@ clientSearch.addEventListener('input',renderClients);
 closeClientModal.addEventListener('click',closeClientEditor);cancelClientModal.addEventListener('click',closeClientEditor);
 closeClientHistory.addEventListener('click',()=>clientHistoryModal.classList.add('hidden'));
 newHistoryButton.addEventListener('click',openHistoryEditor);
+backToClientsButton.addEventListener('click',()=>{clientProfilePanel.classList.add('hidden');clientsPanel.classList.remove('hidden');renderClients();});
+editClientProfileButton.addEventListener('click',()=>openClientEditor(activeClientId));
+addProfileHistoryButton.addEventListener('click',openHistoryEditor);
 closeHistoryModal.addEventListener('click',()=>historyModal.classList.add('hidden'));cancelHistoryModal.addEventListener('click',()=>historyModal.classList.add('hidden'));
 historyCar.addEventListener('change',()=>{const c=cars.find(x=>Number(x.id)===Number(historyCar.value));if(c){historyVehicleName.value=c.name||'';historyVehiclePlate.value=c.plate||'';}});
-clientForm.addEventListener('submit',async e=>{e.preventDefault();clientFormError.textContent='';try{await clientApi(editingClientId?`/clients/${editingClientId}`:'/clients',{method:editingClientId?'PUT':'POST',body:JSON.stringify({name:clientName.value,document:clientDocument.value,phone:clientPhone.value,email:clientEmail.value,notes:clientNotes.value})});closeClientEditor();await loadClients();renderClients();}catch(error){clientFormError.textContent=error.message;}});
-historyForm.addEventListener('submit',async e=>{e.preventDefault();historyFormError.textContent='';try{await clientApi(`/clients/${activeClientId}/history`,{method:'POST',body:JSON.stringify({movementType:historyType.value,movementDate:historyDate.value,carId:historyCar.value||null,vehicleName:historyVehicleName.value,vehiclePlate:historyVehiclePlate.value,responsible:historyResponsible.value,notes:historyNotes.value})});historyModal.classList.add('hidden');clientHistory=await clientApi(`/clients/${activeClientId}/history`);renderClientHistory();await loadClients();renderClients();}catch(error){historyFormError.textContent=error.message;}});
+clientForm.addEventListener('submit',async e=>{e.preventDefault();clientFormError.textContent='';try{const savedId=editingClientId;await clientApi(editingClientId?`/clients/${editingClientId}`:'/clients',{method:editingClientId?'PUT':'POST',body:JSON.stringify({name:clientName.value,document:clientDocument.value,phone:clientPhone.value,email:clientEmail.value,notes:clientNotes.value})});closeClientEditor();await loadClients();renderClients();if(savedId&&clientProfilePanel&&!clientProfilePanel.classList.contains('hidden'))await openClientProfile(savedId);}catch(error){clientFormError.textContent=error.message;}});
+historyForm.addEventListener('submit',async e=>{e.preventDefault();historyFormError.textContent='';try{await clientApi(`/clients/${activeClientId}/history`,{method:'POST',body:JSON.stringify({movementType:historyType.value,movementDate:historyDate.value,carId:historyCar.value||null,vehicleName:historyVehicleName.value,vehiclePlate:historyVehiclePlate.value,responsible:historyResponsible.value,notes:historyNotes.value})});historyModal.classList.add('hidden');clientHistory=await clientApi(`/clients/${activeClientId}/history`);if(clientProfilePanel&&!clientProfilePanel.classList.contains('hidden'))renderClientProfileHistory();else renderClientHistory();await loadClients();renderClients();}catch(error){historyFormError.textContent=error.message;}});
 }
 
 // Eventos de Usuários
